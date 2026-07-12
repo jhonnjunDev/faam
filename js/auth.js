@@ -5,8 +5,8 @@
 const Auth = {
   CHAVE_USUARIOS: 'usuarios_faam',
   CHAVE_SESSAO: 'sessao_atual',
-  ADMIN_EMAIL: 'admin23@icloud',
-  ADMIN_CODIGO: '2301',
+  MAX_TENTATIVAS: 5,
+  BLOQUEIO_MS: 300000, // 5 minutos
 
   async init() {
     const usuarios = await this.obterUsuarios();
@@ -20,8 +20,8 @@ const Auth = {
       {
         id: 'admin001',
         nome: 'Administrador',
-        email: this.ADMIN_EMAIL,
-        codigo: this.ADMIN_CODIGO,
+        email: 'admin23@icloud',
+        codigo: '2301',
         perfil: 'admin',
         criado_em: new Date().toISOString()
       },
@@ -56,10 +56,21 @@ const Auth = {
   },
 
   async login(email, codigo) {
+    // Proteção contra brute force
+    const chaveTentativas = 'tentativas_login_' + email;
+    const tentativas = JSON.parse(localStorage.getItem(chaveTentativas) || '{"count":0,"bloqueado_ate":0}');
+
+    if (tentativas.bloqueado_ate > Date.now()) {
+      const minutos = Math.ceil((tentativas.bloqueado_ate - Date.now()) / 60000);
+      return { sucesso: false, erro: `Conta bloqueada. Tente em ${minutos} minuto(s).` };
+    }
+
     const usuarios = await this.obterUsuarios();
     const usuario = usuarios.find(u => u.email === email && u.codigo === codigo);
 
     if (usuario) {
+      // Login bem-sucedido, limpar tentativas
+      localStorage.removeItem(chaveTentativas);
       const sessao = {
         id: usuario.id,
         nome: usuario.nome,
@@ -70,6 +81,14 @@ const Auth = {
       sessionStorage.setItem(this.CHAVE_SESSAO, JSON.stringify(sessao));
       return { sucesso: true, usuario: sessao };
     }
+
+    // Login falhou, registrar tentativa
+    tentativas.count++;
+    if (tentativas.count >= this.MAX_TENTATIVAS) {
+      tentativas.bloqueado_ate = Date.now() + this.BLOQUEIO_MS;
+      tentativas.count = 0;
+    }
+    localStorage.setItem(chaveTentativas, JSON.stringify(tentativas));
     return { sucesso: false, erro: 'E-mail ou código incorretos' };
   },
 
