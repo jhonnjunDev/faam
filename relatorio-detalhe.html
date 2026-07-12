@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do Relatório - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="relatorio-detalhe" data-titulo="Relatório" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / <a href="relatorios.html">Relatórios</a> / Detalhes'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in" id="conteudo">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Cabeçalho para impressão -->
+  <div class="print-header">
+    <h1><i class="fas fa-heartbeat"></i> FAAM</h1>
+    <p>Sistema de Gestão Médica</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      function aguardarPronto() {
+        if (window.AuthPronto) {
+          iniciarPagina();
+        } else {
+          setTimeout(aguardarPronto, 50);
+        }
+      }
+
+      async function iniciarPagina() {
+        const id = Utils.obterParametroUrl('id');
+        if (!id) { window.location.href = 'relatorios.html'; return; }
+
+        const relatorio = await DB.obterRelatorioPorId(id);
+        if (!relatorio) {
+          document.getElementById('conteudo').innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-file-alt"></i>
+            <h3>Relatório não encontrado</h3>
+            <a href="relatorios.html" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Voltar</a>
+          </div>`;
+        return;
+      }
+
+      const paciente = await DB.obterPacientePorId(relatorio.paciente_id);
+      const nomePaciente = paciente ? paciente.nome : 'Desconhecido';
+
+      const tipoLabels = {
+        'evolucao': 'Evolução Clínica',
+        'enfermagem': 'Relatório de Enfermagem',
+        'prescricao': 'Prescrição Médica',
+        'laudo': 'Laudo de Avaliação',
+        'alta': 'Relatório de Alta',
+        'obito': 'Relatório de Óbito'
+      };
+
+      document.getElementById('conteudo').innerHTML = `
+        <!-- Cabeçalho -->
+        <div class="profile-header">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; opacity:0.7;">${tipoLabels[relatorio.tipo] || relatorio.tipo}</div>
+              <div class="profile-name" style="font-size:22px; margin-top:4px;">${Utils.escapeHtml(nomePaciente)}</div>
+              <div class="profile-meta">
+                <span><i class="fas fa-calendar"></i> ${Utils.formatarData(relatorio.data)}</span>
+                <span><i class="fas fa-user-md"></i> ${Utils.escapeHtml(relatorio.profissional)}</span>
+              </div>
+            </div>
+            <div class="no-print" style="display:flex; gap:8px;">
+              <button onclick="window.print()" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-print"></i> Imprimir
+              </button>
+              <button onclick="gerarPDF()" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-file-pdf"></i> Salvar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informações do Relatório -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-file-medical"></i> Informações do Relatório</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Tipo</label><div class="info-value">${Utils.tipoRelatorioBadge(relatorio.tipo)}</div></div>
+              <div class="info-item"><label>Data</label><div class="info-value">${Utils.formatarData(relatorio.data)}</div></div>
+              <div class="info-item"><label>Profissional</label><div class="info-value">${Utils.escapeHtml(relatorio.profissional)}</div></div>
+              <div class="info-item"><label>Paciente</label><div class="info-value">
+                ${paciente ? `<a href="paciente-ficha.html?id=${paciente.id}" style="color:var(--accent); text-decoration:none;">${Utils.escapeHtml(paciente.nome)}</a>` : 'Desconhecido'}
+              </div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conteúdo -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-align-left"></i> Conteúdo</div>
+          <div class="section-body">
+            <div style="white-space:pre-wrap; font-size:14px; line-height:1.7; color:var(--text); background:#f7fafc; padding:20px; border-radius:8px; border:1px solid var(--border);">
+${Utils.escapeHtml(relatorio.descricao)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadados -->
+        <div class="info-section" style="opacity:0.7;">
+          <div class="section-title"><i class="fas fa-info-circle"></i> Metadados</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Registro criado em</label><div class="info-value">${Utils.formatarDataHora(relatorio.criado_em)}</div></div>
+              <div class="info-item"><label>ID do Registro</label><div class="info-value" style="font-family:monospace; font-size:12px;">${relatorio.id}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="no-print" style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+          ${paciente ? `<a href="paciente-ficha.html?id=${paciente.id}" class="btn btn-outline"><i class="fas fa-user"></i> Ver Ficha do Paciente</a>` : ''}
+          <a href="relatorios.html" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Voltar</a>
+        </div>
+      `;
+
+      // Função para gerar PDF
+      window.gerarPDF = function() {
+        Utils.mostrarToast('Use Ctrl+P e selecione "Salvar como PDF"', 'info');
+        setTimeout(() => window.print(), 500);
+      };
+      }
+
+      aguardarPronto();
+    });
+  </script>
+</body>
+</html>

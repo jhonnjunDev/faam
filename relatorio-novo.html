@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novo Relatório - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="relatorio-novo" data-titulo="Novo Relatório" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / <a href="relatorios.html">Relatórios</a> / Novo'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in">
+        <form id="formRelatorio" onsubmit="return false;">
+          <div class="form-card mb-3">
+            <h3><i class="fas fa-file-medical"></i> Dados do Relatório</h3>
+            <div class="info-grid">
+              <div class="mb-1">
+                <label class="form-label">Paciente *</label>
+                <select class="form-select" id="paciente_id" required>
+                  <option value="">Selecione o paciente</option>
+                </select>
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Tipo de Relatório *</label>
+                <select class="form-select" id="tipo" required>
+                  <option value="">Selecione o tipo</option>
+                  <option value="evolucao">Evolução Clínica</option>
+                  <option value="enfermagem">Relatório de Enfermagem</option>
+                  <option value="prescricao">Prescrição Médica</option>
+                  <option value="laudo">Laudos</option>
+                  <option value="alta">Relatório de Alta</option>
+                  <option value="obito">Relatório de Óbito</option>
+                </select>
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Data *</label>
+                <input type="date" class="form-control" id="data" required>
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Profissional Responsável *</label>
+                <input type="text" class="form-control" id="profissional" required placeholder="Ex: Dr. Carlos Mendes">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card mb-3">
+            <h3><i class="fas fa-align-left"></i> Conteúdo do Relatório</h3>
+            <div class="mb-1">
+              <label class="form-label">Descrição / Conteúdo *</label>
+              <textarea class="form-control" id="descricao" rows="12" required
+                placeholder="Descreva detalhadamente o conteúdo do relatório...&#10;&#10;Para prescrições, liste medicamentos com dose e frequência.&#10;Para laudos, inclua avaliação clínica e conclusão."></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <a href="relatorios.html" class="btn btn-outline"><i class="fas fa-times"></i> Cancelar</a>
+            <button type="submit" class="btn btn-primary" id="btnSalvar"><i class="fas fa-save"></i> Salvar Relatório</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      function aguardarPronto() {
+        if (window.AuthPronto) {
+          iniciarPagina();
+        } else {
+          setTimeout(aguardarPronto, 50);
+        }
+      }
+
+      async function iniciarPagina() {
+        if (!Auth.podeAcessar('relatorio_novo')) {
+          window.location.href = 'dashboard.html';
+          return;
+        }
+
+        // Preencher select de pacientes
+        const selectPaciente = document.getElementById('paciente_id');
+        const pacientes = (await DB.obterPacientes()).filter(p => p.status === 'ativo');
+        pacientes.forEach(p => {
+          const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.nome} (Quarto ${p.quarto || '-'})`;
+        selectPaciente.appendChild(opt);
+      });
+
+      // Se veio de paciente específico
+      const pacienteId = Utils.obterParametroUrl('paciente');
+      if (pacienteId) {
+        selectPaciente.value = pacienteId;
+      }
+
+      // Data atual
+      document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+      // Nome do profissional logado
+      const sessao = Auth.obterSessao();
+      if (sessao && sessao.perfil === 'medico') {
+        document.getElementById('profissional').value = sessao.nome;
+      }
+
+      document.getElementById('formRelatorio').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const dados = {
+          paciente_id: document.getElementById('paciente_id').value,
+          tipo: document.getElementById('tipo').value,
+          data: document.getElementById('data').value,
+          profissional: document.getElementById('profissional').value.trim(),
+          descricao: document.getElementById('descricao').value.trim()
+        };
+
+        if (!dados.paciente_id || !dados.tipo || !dados.data || !dados.profissional || !dados.descricao) {
+          Utils.mostrarToast('Preencha todos os campos obrigatórios.', 'error');
+          return;
+        }
+
+        const relatorio = DB.cadastrarRelatorio(dados);
+        Utils.mostrarToast('Relatório salvo com sucesso!');
+        setTimeout(() => {
+          window.location.href = `relatorio-detalhe.html?id=${relatorio.id}`;
+        }, 800);
+      });
+
+      aguardarPronto();
+    });
+  </script>
+</body>
+</html>

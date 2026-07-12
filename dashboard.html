@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="dashboard" data-titulo="Dashboard" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / Painel'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in" id="conteudo">
+        <div style="text-align:center; padding:60px;">
+          <i class="fas fa-spinner fa-spin" style="font-size:32px; color:var(--accent);"></i>
+          <p style="margin-top:16px; color:var(--text-light);">Carregando...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    function carregarDashboard() {
+      const container = document.getElementById('conteudo');
+      const sessao = Auth.obterSessao();
+
+      if (!sessao) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      DB.obterEstatisticas().then(stats => {
+        const maxFaixa = Math.max(...Object.values(stats.faixas), 1);
+        const faixasHtml = Object.entries(stats.faixas).map(([faixa, qtd]) => {
+          const pct = (qtd / maxFaixa) * 100;
+          return `
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+              <span style="width:50px; font-size:13px; color:var(--text-light); text-align:right;">${faixa} anos</span>
+              <div style="flex:1; background:#edf2f7; border-radius:6px; height:24px; overflow:hidden;">
+                <div style="width:${pct}%; background:var(--accent); height:100%; border-radius:6px; display:flex; align-items:center; padding-left:8px; min-width:${qtd > 0 ? '30px' : '0'}">
+                  ${qtd > 0 ? `<span style="color:#fff; font-size:12px; font-weight:600">${qtd}</span>` : ''}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+        const relatoriosHtml = stats.ultimosRelatorios.length > 0
+          ? stats.ultimosRelatorios.map(r => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-weight:600; font-size:14px;">${Utils.escapeHtml(r.paciente_nome)}</div>
+                <div style="font-size:12px; color:var(--text-light)">${Utils.tipoRelatorioBadge(r.tipo)} &middot; ${Utils.formatarData(r.data)}</div>
+              </div>
+              <a href="relatorio-detalhe.html?id=${r.id}" class="btn btn-sm btn-outline"><i class="fas fa-eye"></i></a>
+            </div>`).join('')
+          : '<div style="padding:20px; text-align:center; color:var(--text-light);">Nenhum relatório</div>';
+
+        const adminBtn = sessao.perfil === 'admin'
+          ? `<a href="usuarios.html" class="btn btn-warning" style="background:#d69e2e; color:#fff;"><i class="fas fa-user-cog"></i> Gerenciar Usuários</a>`
+          : '';
+
+        const podeCadastrar = sessao.perfil !== 'assistente_social';
+
+        container.innerHTML = `
+          <div style="background:linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color:#fff; border-radius:12px; padding:24px 32px; margin-bottom:24px;">
+            <h2>Bem-vindo, ${Utils.escapeHtml(sessao.nome)}!</h2>
+            <p style="opacity:0.85; font-size:14px;">
+              ${sessao.perfil === 'admin' ? 'Painel Administrativo - Acesso total ao sistema' :
+                sessao.perfil === 'medico' ? 'Painel Médico - Cadastro e relatórios' :
+                'Painel do Assistente Social - Visualização de pacientes'}
+            </p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
+            <div class="stat-card">
+              <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+              <div class="stat-value">${stats.total}</div>
+              <div class="stat-label">Total de Pacientes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fas fa-heartbeat"></i></div>
+              <div class="stat-value">${stats.ativos}</div>
+              <div class="stat-label">Pacientes Ativos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon yellow"><i class="fas fa-pills"></i></div>
+              <div class="stat-value">${stats.comControlados}</div>
+              <div class="stat-label">Controlados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red"><i class="fas fa-file-medical"></i></div>
+              <div class="stat-value">${stats.relatoriosRecentes}</div>
+              <div class="stat-label">Relatórios (7 dias)</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:24px;">
+            <div class="table-card">
+              <div class="table-header">
+                <h3><i class="fas fa-chart-bar" style="color:var(--accent); margin-right:8px;"></i> Distribuição por Idade</h3>
+              </div>
+              <div style="padding:24px;">${faixasHtml}</div>
+            </div>
+
+            <div>
+              <div class="table-card" style="margin-bottom:16px;">
+                <div class="table-header">
+                  <h3><i class="fas fa-chart-pie" style="color:var(--success); margin-right:8px;"></i> Resumo</h3>
+                </div>
+                <div style="padding:16px;">
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <span style="font-size:13px; color:var(--text-light)"><i class="fas fa-male" style="color:var(--accent); margin-right:6px;"></i> Masculino</span>
+                    <span style="font-weight:700;">${stats.masculino}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <span style="font-size:13px; color:var(--text-light)"><i class="fas fa-female" style="color:var(--danger); margin-right:6px;"></i> Feminino</span>
+                    <span style="font-weight:700;">${stats.feminino}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <span style="font-size:13px; color:var(--text-light)"><i class="fas fa-check-circle" style="color:var(--success); margin-right:6px;"></i> Ativos</span>
+                    <span style="font-weight:700;">${stats.ativos}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <span style="font-size:13px; color:var(--text-light)"><i class="fas fa-arrow-up" style="color:var(--accent); margin-right:6px;"></i> Altas</span>
+                    <span style="font-weight:700;">${stats.altas}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:8px 0;">
+                    <span style="font-size:13px; color:var(--text-light)"><i class="fas fa-times-circle" style="color:var(--danger); margin-right:6px;"></i> Óbitos</span>
+                    <span style="font-weight:700;">${stats.obitos}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="table-card">
+                <div class="table-header">
+                  <h3><i class="fas fa-file-medical" style="color:var(--warning); margin-right:8px;"></i> Últimos Relatórios</h3>
+                  <a href="relatorios.html" class="btn btn-sm btn-outline">Ver todos</a>
+                </div>
+                <div style="padding:12px 16px;">${relatoriosHtml}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;">
+            <h3 style="font-size:16px; font-weight:600; margin-bottom:16px; color:var(--primary);">
+              <i class="fas fa-bolt" style="color:var(--warning); margin-right:8px;"></i> Ações Rápidas
+            </h3>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              ${podeCadastrar ? `<a href="paciente-novo.html" class="btn btn-primary"><i class="fas fa-user-plus"></i> Novo Paciente</a>` : ''}
+              ${podeCadastrar ? `<a href="relatorio-novo.html" class="btn btn-success"><i class="fas fa-file-medical"></i> Novo Relatório</a>` : ''}
+              <a href="pacientes.html" class="btn btn-outline"><i class="fas fa-search"></i> Buscar Paciente</a>
+              <a href="relatorios.html" class="btn btn-outline"><i class="fas fa-list"></i> Ver Relatórios</a>
+              ${adminBtn}
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top:32px; padding-top:16px; border-top:1px solid var(--border);">
+            <p style="font-size:12px; color:var(--text-light);">Desenvolvido por <strong>Jhonata</strong></p>
+          </div>
+        `;
+      }).catch(err => {
+        console.error('Erro:', err);
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i>
+            <h3>Erro ao carregar dados</h3>
+            <p>${err.message}</p>
+            <button onclick="location.reload()" class="btn btn-primary" style="margin-top:16px;">
+              <i class="fas fa-sync"></i> Tentar novamente
+            </button>
+          </div>`;
+      });
+    }
+
+    // Esperar auth.js terminar de inicializar, depois carregar
+    function esperar() {
+      if (typeof Auth !== 'undefined' && Auth.estaAutenticado && Auth.estaAutenticado()) {
+        carregarDashboard();
+      } else if (typeof Auth !== 'undefined' && Auth.estaAutenticado && !Auth.estaAutenticado()) {
+        window.location.href = 'index.html';
+      } else {
+        setTimeout(esperar, 100);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      esperar();
+    });
+  </script>
+</body>
+</html>

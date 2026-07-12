@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha do Paciente - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="paciente-ficha" data-titulo="Ficha do Paciente" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / <a href="pacientes.html">Pacientes</a> / Ficha'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in" id="conteudo">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Carregando ficha...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      function aguardarPronto() {
+        if (window.AuthPronto) {
+          iniciarPagina();
+        } else {
+          setTimeout(aguardarPronto, 50);
+        }
+      }
+
+      async function iniciarPagina() {
+        const id = Utils.obterParametroUrl('id');
+        if (!id) {
+          window.location.href = 'pacientes.html';
+          return;
+        }
+
+        const paciente = await DB.obterPacientePorId(id);
+        if (!paciente) {
+          document.getElementById('conteudo').innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-user-slash"></i>
+            <h3>Paciente não encontrado</h3>
+            <p>O paciente solicitado não foi encontrado no sistema.</p>
+            <a href="pacientes.html" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Voltar</a>
+          </div>`;
+        return;
+      }
+
+      const idade = Utils.calcularIdade(paciente.data_nascimento);
+      const relatorios = await DB.obterRelatoriosPorPaciente(id);
+      const podeEditar = Auth.podeAcessar('paciente_editar');
+
+      const relatoriosHtml = relatorios.length > 0
+        ? relatorios.slice(0, 5).map(r => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);">
+            <div>
+              ${Utils.tipoRelatorioBadge(r.tipo)}
+              <span style="font-size:13px; margin-left:8px;">${Utils.formatarData(r.data)}</span>
+              <span style="font-size:12px; color:var(--text-light); margin-left:8px;">${Utils.escapeHtml(r.profissional)}</span>
+            </div>
+            <a href="relatorio-detalhe.html?id=${r.id}" class="btn btn-sm btn-outline">
+              <i class="fas fa-eye"></i>
+            </a>
+          </div>
+        `).join('')
+        : '<p style="color:var(--text-light); font-size:14px; padding:16px 0;">Nenhum relatório registrado.</p>';
+
+      document.getElementById('conteudo').innerHTML = `
+        <!-- Cabeçalho -->
+        <div class="profile-header">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div class="profile-name">${Utils.escapeHtml(paciente.nome)}</div>
+              <div class="profile-meta">
+                <span><i class="fas fa-id-card"></i> ${Utils.formatarCPF(paciente.cpf)}</span>
+                <span><i class="fas fa-birthday-cake"></i> ${Utils.formatarData(paciente.data_nascimento)} (${idade} anos)</span>
+                <span><i class="fas fa-venus-mars"></i> ${paciente.sexo === 'M' ? 'Masculino' : 'Feminino'}</span>
+                <span><i class="fas fa-bed"></i> Quarto ${paciente.quarto || '-'}</span>
+              </div>
+              <div style="margin-top:12px;">${Utils.statusBadge(paciente.status)}</div>
+            </div>
+            <div class="no-print" style="display:flex; gap:8px; flex-wrap:wrap;">
+              ${podeEditar ? `<a href="paciente-editar.html?id=${paciente.id}" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-edit"></i> Editar
+              </a>` : ''}
+              <a href="relatorio-novo.html?paciente=${paciente.id}" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-file-medical"></i> Novo Relatório
+              </a>
+              <button onclick="window.print()" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-print"></i> Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dados Pessoais -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-user"></i> Dados Pessoais</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Nome Completo</label><div class="info-value">${Utils.escapeHtml(paciente.nome)}</div></div>
+              <div class="info-item"><label>CPF</label><div class="info-value">${Utils.formatarCPF(paciente.cpf)}</div></div>
+              <div class="info-item"><label>Data de Nascimento</label><div class="info-value">${Utils.formatarData(paciente.data_nascimento)} (${idade} anos)</div></div>
+              <div class="info-item"><label>Sexo</label><div class="info-value">${paciente.sexo === 'M' ? 'Masculino' : 'Feminino'}</div></div>
+              <div class="info-item"><label>Estado Civil</label><div class="info-value">${paciente.estado_civil || '-'}</div></div>
+              <div class="info-item"><label>Naturalidade</label><div class="info-value">${paciente.naturalidade || '-'}</div></div>
+              <div class="info-item"><label>Telefone</label><div class="info-value">${Utils.formatarTelefone(paciente.telefone)}</div></div>
+              <div class="info-item"><label>E-mail</label><div class="info-value">${paciente.email || '-'}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-map-marker-alt"></i> Endereço</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Rua / Avenida</label><div class="info-value">${paciente.endereco_rua || '-'}</div></div>
+              <div class="info-item"><label>Bairro</label><div class="info-value">${paciente.endereco_bairro || '-'}</div></div>
+              <div class="info-item"><label>Cidade</label><div class="info-value">${paciente.endereco_cidade || '-'}</div></div>
+              <div class="info-item"><label>CEP</label><div class="info-value">${paciente.endereco_cep || '-'}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contato de Emergência -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-phone-alt"></i> Contato de Emergência</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Nome</label><div class="info-value">${paciente.contato_nome || '-'}</div></div>
+              <div class="info-item"><label>Parentesco</label><div class="info-value">${paciente.contato_parentesco || '-'}</div></div>
+              <div class="info-item"><label>Telefone</label><div class="info-value">${Utils.formatarTelefone(paciente.contato_telefone)}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Internação -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-bed"></i> Dados de Internação</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Data de Entrada</label><div class="info-value">${Utils.formatarData(paciente.data_entrada)}</div></div>
+              <div class="info-item"><label>Quarto</label><div class="info-value">${paciente.quarto || '-'}</div></div>
+              <div class="info-item"><label>Tipo de Acomodação</label><div class="info-value">${paciente.tipo_acomodacao || '-'}</div></div>
+              <div class="info-item"><label>Responsável Legal</label><div class="info-value">${paciente.responsavel_legal || '-'}</div></div>
+              <div class="info-item"><label>Status</label><div class="info-value">${Utils.statusBadge(paciente.status)}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saúde -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-heartbeat"></i> Condição de Saúde</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Diagnóstico Principal</label><div class="info-value">${Utils.escapeHtml(paciente.diagnostico_principal)}</div></div>
+              <div class="info-item"><label>Diagnósticos Secundários</label><div class="info-value">${Utils.escapeHtml(paciente.diagnosticos_secundarios) || '-'}</div></div>
+              <div class="info-item"><label>Alergias</label><div class="info-value">${Utils.escapeHtml(paciente.alergias) || 'Nenhuma conhecida'}</div></div>
+              <div class="info-item"><label>Doenças Crônicas</label><div class="info-value">${Utils.escapeHtml(paciente.doencas_cronicas) || '-'}</div></div>
+            </div>
+            <div style="margin-top:16px;">
+              <div class="info-item">
+                <label>Medicamentos em Uso</label>
+                <div class="info-value" style="white-space:pre-wrap; background:#f7fafc; padding:12px; border-radius:8px; margin-top:4px;">${Utils.escapeHtml(paciente.medicamentos) || '-'}</div>
+              </div>
+            </div>
+            <div class="info-grid" style="margin-top:16px;">
+              <div class="info-item">
+                <label>Histórico de Cirurgias</label>
+                <div class="info-value">${Utils.escapeHtml(paciente.historico_cirurgias) || '-'}</div>
+              </div>
+              <div class="info-item">
+                <label>Internações Anteriores</label>
+                <div class="info-value">${Utils.escapeHtml(paciente.historico_internacoes) || '-'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acompanhamento -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-stethoscope"></i> Acompanhamento</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div class="info-item"><label>Responsável</label><div class="info-value">${Utils.escapeHtml(paciente.responsavel_acompanhamento) || '-'}</div></div>
+            </div>
+            ${paciente.observacoes ? `
+            <div style="margin-top:16px;">
+              <div class="info-item">
+                <label>Observações</label>
+                <div class="info-value" style="white-space:pre-wrap; background:#f7fafc; padding:12px; border-radius:8px; margin-top:4px;">${Utils.escapeHtml(paciente.observacoes)}</div>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Relatórios -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-file-medical"></i> Relatórios Médicos</div>
+          <div class="section-body">
+            ${relatoriosHtml}
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="no-print" style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+          <a href="pacientes.html" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Voltar
+          </a>
+        </div>
+      `;
+      }
+
+      aguardarPronto();
+    });
+  </script>
+</body>
+</html>

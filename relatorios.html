@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatórios - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="relatorios" data-titulo="Relatórios Médicos" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / Relatórios'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in">
+        <!-- Busca e Filtros -->
+        <div class="table-card mb-3">
+          <div class="table-header">
+            <div class="search-bar" style="flex:1">
+              <input type="text" class="form-control" id="busca" placeholder="Buscar por paciente ou profissional...">
+              <button class="btn btn-primary" onclick="filtrar()"><i class="fas fa-search"></i> Buscar</button>
+              <button class="btn btn-outline" onclick="limparFiltros()"><i class="fas fa-times"></i> Limpar</button>
+            </div>
+            <a href="relatorio-novo.html" class="btn btn-success no-print" id="btnNovo">
+              <i class="fas fa-plus-circle"></i> Novo Relatório
+            </a>
+          </div>
+          <div class="filter-bar">
+            <select class="form-select" id="filtroTipo" onchange="filtrar()">
+              <option value="">Todos os tipos</option>
+              <option value="evolucao">Evolução Clínica</option>
+              <option value="enfermagem">Enfermagem</option>
+              <option value="prescricao">Prescrição Médica</option>
+              <option value="laudo">Laudos</option>
+              <option value="alta">Relatório de Alta</option>
+              <option value="obito">Relatório de Óbito</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Lista -->
+        <div id="listaRelatorios"></div>
+        <div id="estadoVazio" style="display:none">
+          <div class="table-card">
+            <div class="empty-state">
+              <i class="fas fa-file-medical"></i>
+              <h3>Nenhum relatório encontrado</h3>
+              <p>Registre um novo relatório ou ajuste os filtros.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function filtrar() {
+      const termo = document.getElementById('busca').value;
+      const filtros = {
+        tipo: document.getElementById('filtroTipo').value,
+        paciente_id: Utils.obterParametroUrl('paciente')
+      };
+      renderizarLista(await DB.buscarRelatorios(termo, filtros));
+    }
+
+    function limparFiltros() {
+      document.getElementById('busca').value = '';
+      document.getElementById('filtroTipo').value = '';
+      filtrar();
+    }
+
+    function renderizarLista(relatorios) {
+      const container = document.getElementById('listaRelatorios');
+      const vazio = document.getElementById('estadoVazio');
+
+      if (relatorios.length === 0) {
+        container.innerHTML = '';
+        vazio.style.display = 'block';
+        return;
+      }
+
+      vazio.style.display = 'none';
+      container.innerHTML = relatorios.map(r => `
+        <div class="relatorio-card cursor-pointer" onclick="window.location.href='relatorio-detalhe.html?id=${r.id}'">
+          <div class="rel-header">
+            <div>
+              ${Utils.tipoRelatorioBadge(r.tipo)}
+            </div>
+            <div class="rel-date">
+              <i class="fas fa-calendar"></i> ${Utils.formatarData(r.data)}
+            </div>
+          </div>
+          <div class="rel-paciente">
+            <i class="fas fa-user" style="color:var(--text-light); margin-right:6px;"></i>
+            ${Utils.escapeHtml(r.paciente_nome)}
+          </div>
+          <div class="rel-profissional">
+            <i class="fas fa-user-md" style="margin-right:6px;"></i>
+            ${Utils.escapeHtml(r.profissional || 'Não informado')}
+          </div>
+          <div class="rel-preview text-truncate-2">
+            ${Utils.escapeHtml(Utils.truncar(r.descricao, 200))}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Aguardar auth.js inicializar
+      function aguardarPronto() {
+        if (window.AuthPronto) {
+          iniciarPagina();
+        } else {
+          setTimeout(aguardarPronto, 50);
+        }
+      }
+
+      async function iniciarPagina() {
+        if (!Auth.podeAcessar('relatorio_novo')) {
+          document.getElementById('btnNovo').style.display = 'none';
+        }
+
+        document.getElementById('busca').addEventListener('keyup', (e) => {
+          if (e.key === 'Enter') filtrar();
+        });
+
+        // Se veio de paciente específico
+        const pacienteId = Utils.obterParametroUrl('paciente');
+        if (pacienteId) {
+          const paciente = await DB.obterPacientePorId(pacienteId);
+          if (paciente) {
+            document.querySelector('.table-header').insertAdjacentHTML('afterbegin',
+              `<div style="background:var(--primary); color:#fff; padding:6px 14px; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-user"></i> ${Utils.escapeHtml(paciente.nome)}
+                <a href="relatorios.html" style="color:#fff; margin-left:8px;" title="Limpar filtro"><i class="fas fa-times"></i></a>
+            </div>`
+          );
+        }
+
+        await filtrar();
+      }
+
+      aguardarPronto();
+    });
+  </script>
+</body>
+</html>

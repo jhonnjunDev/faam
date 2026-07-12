@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pacientes - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="pacientes" data-titulo="Pacientes" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / Pacientes'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in">
+        <div class="table-card mb-3">
+          <div class="table-header">
+            <div class="search-bar" style="flex:1">
+              <input type="text" class="form-control" id="busca" placeholder="Buscar por nome, CPF ou quarto...">
+              <button class="btn btn-primary" onclick="filtrar()"><i class="fas fa-search"></i> Buscar</button>
+              <button class="btn btn-outline" onclick="limparFiltros()"><i class="fas fa-times"></i> Limpar</button>
+            </div>
+            <a href="paciente-novo.html" class="btn btn-success no-print" id="btnNovo">
+              <i class="fas fa-user-plus"></i> Novo Paciente
+            </a>
+          </div>
+          <div class="filter-bar">
+            <select class="form-select" id="filtroStatus" onchange="filtrar()">
+              <option value="">Todos os status</option>
+              <option value="ativo">Ativo</option>
+              <option value="alta">Alta</option>
+              <option value="obito">Óbito</option>
+            </select>
+            <select class="form-select" id="filtroSexo" onchange="filtrar()">
+              <option value="">Todos os sexos</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
+            <input type="text" class="form-control" id="filtroQuarto" placeholder="Quarto" style="max-width:100px" oninput="filtrar()">
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>CPF</th>
+                  <th>Idade</th>
+                  <th>Quarto</th>
+                  <th>Status</th>
+                  <th>Desde</th>
+                  <th class="text-right no-print">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaPacientes"></tbody>
+            </table>
+          </div>
+          <div id="estadoVazio" style="display:none">
+            <div class="empty-state">
+              <i class="fas fa-users"></i>
+              <h3>Nenhum paciente encontrado</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function filtrar() {
+      const termo = document.getElementById('busca').value;
+      const filtros = {
+        status: document.getElementById('filtroStatus').value,
+        sexo: document.getElementById('filtroSexo').value,
+        quarto: document.getElementById('filtroQuarto').value
+      };
+      renderizarTabela(await DB.buscarPacientes(termo, filtros));
+    }
+
+    function limparFiltros() {
+      document.getElementById('busca').value = '';
+      document.getElementById('filtroStatus').value = '';
+      document.getElementById('filtroSexo').value = '';
+      document.getElementById('filtroQuarto').value = '';
+      filtrar();
+    }
+
+    function renderizarTabela(pacientes) {
+      const tbody = document.getElementById('tabelaPacientes');
+      const vazio = document.getElementById('estadoVazio');
+      if (pacientes.length === 0) { tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+      vazio.style.display = 'none';
+      tbody.innerHTML = pacientes.map(p => `
+        <tr class="cursor-pointer" onclick="window.location.href='paciente-ficha.html?id=${p.id}'">
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">${Utils.obterIniciais(p.nome)}</div>
+              <div>
+                <div style="font-weight:600; font-size:14px;">${Utils.escapeHtml(p.nome)}</div>
+                <div style="font-size:12px; color:var(--text-light)">${p.sexo === 'M' ? 'Masculino' : 'Feminino'}</div>
+              </div>
+            </div>
+          </td>
+          <td>${Utils.formatarCPF(p.cpf)}</td>
+          <td>${Utils.calcularIdade(p.data_nascimento)} anos</td>
+          <td>${p.quarto || '-'}</td>
+          <td>${Utils.statusBadge(p.status)}</td>
+          <td>${Utils.formatarData(p.data_entrada)}</td>
+          <td class="text-right no-print">
+            <div style="display:flex; gap:6px; justify-content:flex-end;">
+              <a href="paciente-ficha.html?id=${p.id}" class="btn btn-sm btn-outline" onclick="event.stopPropagation()"><i class="fas fa-eye"></i></a>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function esperar() {
+      if (typeof Auth !== 'undefined' && Auth.estaAutenticado && Auth.estaAutenticado()) {
+        if (!Auth.podeAcessar('pacientes')) { document.getElementById('btnNovo').style.display = 'none'; }
+        document.getElementById('busca').addEventListener('keyup', e => { if (e.key === 'Enter') filtrar(); });
+        filtrar();
+      } else if (typeof Auth !== 'undefined' && Auth.estaAutenticado && !Auth.estaAutenticado()) {
+        window.location.href = 'index.html';
+      } else { setTimeout(esperar, 100); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { esperar(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+/* ========================================
+   Utilitários Gerais
+   ======================================== */
+
+const Utils = {
+  formatarCPF(cpf) {
+    if (!cpf) return '-';
+    cpf = cpf.replace(/\D/g, '');
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  },
+
+  formatarTelefone(tel) {
+    if (!tel) return '-';
+    tel = tel.replace(/\D/g, '');
+    if (tel.length === 11) return tel.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    if (tel.length === 10) return tel.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    return tel;
+  },
+
+  formatarData(data) {
+    if (!data) return '-';
+    const d = new Date(data + 'T00:00:00');
+    return d.toLocaleDateString('pt-BR');
+  },
+
+  formatarDataHora(data) {
+    if (!data) return '-';
+    return new Date(data).toLocaleString('pt-BR');
+  },
+
+  calcularIdade(dataNascimento) {
+    if (!dataNascimento) return '-';
+    const hoje = new Date();
+    const nasc = new Date(dataNascimento + 'T00:00:00');
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const mes = hoje.getMonth() - nasc.getMonth();
+    if (mes < 0 || (mes === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade;
+  },
+
+  gerarId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+  },
+
+  async hashSenha(senha) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(senha);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  sanitizar(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  },
+
+  truncar(str, max) {
+    if (!str || str.length <= max) return str || '';
+    return str.substring(0, max) + '...';
+  },
+
+  obterIniciais(nome) {
+    if (!nome) return '??';
+    return nome.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase();
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return str.replace(/[&<>"']/g, m => map[m]);
+  },
+
+  statusBadge(status) {
+    const map = {
+      'ativo': 'badge-ativo',
+      'alta': 'badge-alta',
+      'obito': 'badge-obito'
+    };
+    const cls = map[status] || 'badge-tipo';
+    const label = status === 'obito' ? 'Óbito' : status.charAt(0).toUpperCase() + status.slice(1);
+    return `<span class="badge ${cls}"><i class="fas fa-circle" style="font-size:6px"></i> ${label}</span>`;
+  },
+
+  tipoRelatorioBadge(tipo) {
+    const cores = {
+      'evolucao': 'background:#ebf8ff;color:#2b6cb0',
+      'enfermagem': 'background:#f0fff4;color:#276749',
+      'prescricao': 'background:#faf5ff;color:#6b46c1',
+      'laudo': 'background:#fffff0;color:#975a16',
+      'alta': 'background:#e6fffa;color:#234e52',
+      'obito': 'background:#fff5f5;color:#9b2c2c'
+    };
+    const labels = {
+      'evolucao': 'Evolução Clínica',
+      'enfermagem': 'Enfermagem',
+      'prescricao': 'Prescrição Médica',
+      'laudo': 'Laudos',
+      'alta': 'Relatório de Alta',
+      'obito': 'Relatório de Óbito'
+    };
+    const style = cores[tipo] || 'background:#edf2f7;color:#2d3748';
+    return `<span class="badge badge-tipo" style="${style}">${labels[tipo] || tipo}</span>`;
+  },
+
+  obterParametroUrl(nome) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(nome);
+  },
+
+  confirmar(mensagem) {
+    return confirm(mensagem);
+  },
+
+  mostrarToast(mensagem, tipo = 'success') {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: ${tipo === 'success' ? '#38a169' : tipo === 'error' ? '#e53e3e' : '#3182ce'};
+      color: #fff; padding: 14px 24px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      animation: slideUp 0.3s ease;
+    `;
+    toast.textContent = mensagem;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+};

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuários - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="usuarios" data-titulo="Gerenciar Usuários" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / Usuários'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in">
+        <div class="table-card mb-3">
+          <div class="table-header">
+            <h3><i class="fas fa-user-cog"></i> Usuários do Sistema</h3>
+            <button class="btn btn-success no-print" onclick="abrirModal()">
+              <i class="fas fa-user-plus"></i> Cadastrar Funcionário
+            </button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>E-mail</th>
+                  <th>Código</th>
+                  <th>Perfil</th>
+                  <th class="text-right no-print">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaUsuarios"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top:24px;">
+          <p style="font-size:12px; color:var(--text-light);">Desenvolvido por <strong>Jhonata</strong></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Cadastro de Funcionário -->
+  <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div class="login-card" style="max-width:480px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h2 style="font-size:20px; color:var(--primary)"><i class="fas fa-user-plus"></i> Cadastrar Funcionário</h2>
+        <button onclick="fecharModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-light)">&times;</button>
+      </div>
+      <div class="login-error" id="erroModal"></div>
+      <div id="sucessoModal" style="background:#f0fff4; color:#38a169; border-radius:8px; padding:16px; display:none; margin-bottom:16px;">
+        <div style="text-align:center;">
+          <i class="fas fa-check-circle" style="font-size:32px; color:#38a169; margin-bottom:8px;"></i>
+          <h3 style="margin-bottom:8px; color:#38a169;">Funcionário Cadastrado!</h3>
+          <p style="margin-bottom:4px;">E-mail: <strong id="emailCadastrado"></strong></p>
+          <p style="margin-bottom:12px;">Código: <strong id="codigoCadastrado" style="font-size:20px; letter-spacing:4px;"></strong></p>
+          <p style="font-size:12px; color:var(--text-light);">Anote o código e informe ao funcionário.</p>
+        </div>
+      </div>
+      <form id="formUsuario" onsubmit="return false;">
+        <div class="mb-2">
+          <label class="form-label">Nome completo *</label>
+          <input type="text" class="form-control" id="cadNome" placeholder="Nome do funcionário" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">E-mail *</label>
+          <input type="email" class="form-control" id="cadEmail" placeholder="funcionario@email.com" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Código de Acesso *</label>
+          <input type="text" class="form-control" id="cadCodigo" placeholder="Mínimo 4 caracteres" required minlength="4" maxlength="10" style="text-align:center; font-size:18px; letter-spacing:4px; font-weight:700;">
+          <small style="color:var(--text-light); font-size:12px;">O funcionário usará este código para fazer login</small>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Perfil de acesso *</label>
+          <select class="form-select" id="cadPerfil" required>
+            <option value="assistente_social">Assistente Social</option>
+            <option value="medico">Médico</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%" id="btnCadastrar">
+          <i class="fas fa-save"></i> Salvar Funcionário
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    async function renderizarTabela() {
+      const usuarios = await Auth.obterUsuarios();
+      const sessao = Auth.obterSessao();
+      const tbody = document.getElementById('tabelaUsuarios');
+
+      const perfilLabels = {
+        admin: '<span class="badge" style="background:#faf5ff;color:#6b46c1;">Administrador</span>',
+        medico: '<span class="badge" style="background:#ebf8ff;color:#2b6cb0;">Médico</span>',
+        assistente_social: '<span class="badge" style="background:#f0fff4;color:#276749;">Assist. Social</span>'
+      };
+
+      tbody.innerHTML = usuarios.map(u => `
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+                ${Utils.obterIniciais(u.nome)}
+              </div>
+              <div>
+                <div style="font-weight:600; font-size:14px;">${Utils.escapeHtml(u.nome)}</div>
+                ${u.id === sessao.id ? '<span style="font-size:11px; color:var(--accent);">(Você)</span>' : ''}
+              </div>
+            </div>
+          </td>
+          <td>${Utils.escapeHtml(u.email)}</td>
+          <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">${u.codigo}</code></td>
+          <td>${perfilLabels[u.perfil] || u.perfil}</td>
+          <td class="text-right no-print">
+            ${u.id !== sessao.id ? `
+              <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')" title="Excluir">
+                <i class="fas fa-trash"></i>
+              </button>
+            ` : '<span class="text-muted" style="font-size:12px;">-</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function abrirModal() {
+      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('formUsuario').reset();
+      document.getElementById('erroModal').style.display = 'none';
+      document.getElementById('sucessoModal').style.display = 'none';
+      document.getElementById('formUsuario').style.display = 'block';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    async function excluirUsuario(id, nome) {
+      if (!Utils.confirmar(`Deseja realmente excluir o usuário "${nome}"?`)) return;
+
+      if (DB.modoSupabase) {
+        await supabase.from('usuarios').delete().eq('id', id);
+      } else {
+        const usuarios = (await Auth.obterUsuarios()).filter(u => u.id !== id);
+        localStorage.setItem(Auth.CHAVE_USUARIOS, JSON.stringify(usuarios));
+      }
+
+      Utils.mostrarToast('Usuário excluído com sucesso!');
+      renderizarTabela();
+    }
+
+    function aguardarPronto() {
+      if (window.AuthPronto) {
+        iniciarPagina();
+      } else {
+        setTimeout(aguardarPronto, 50);
+      }
+    }
+
+    async function iniciarPagina() {
+      if (!Auth.podeAcessar('usuarios')) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      renderizarTabela();
+
+      document.getElementById('formUsuario').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const erroEl = document.getElementById('erroModal');
+        const sucessoEl = document.getElementById('sucessoModal');
+        erroEl.style.display = 'none';
+        sucessoEl.style.display = 'none';
+
+        const nome = document.getElementById('cadNome').value.trim();
+        const email = document.getElementById('cadEmail').value.trim();
+        const codigo = document.getElementById('cadCodigo').value.trim();
+        const perfil = document.getElementById('cadPerfil').value;
+
+        if (!nome || !email || !codigo) {
+          erroEl.textContent = 'Preencha todos os campos.';
+          erroEl.style.display = 'block';
+          return;
+        }
+
+        if (codigo.length < 4) {
+          erroEl.textContent = 'O código deve ter pelo menos 4 caracteres.';
+          erroEl.style.display = 'block';
+          return;
+        }
+
+        const usuarios = await Auth.obterUsuarios();
+        if (usuarios.find(u => u.codigo === codigo)) {
+          erroEl.textContent = 'Este código já está em uso. Escolha outro.';
+          erroEl.style.display = 'block';
+          return;
+        }
+
+        const resultado = await Auth.cadastrarUsuario({ nome, email, codigo, perfil }, true);
+
+        if (resultado.sucesso) {
+          document.getElementById('formUsuario').style.display = 'none';
+          sucessoEl.style.display = 'block';
+          document.getElementById('emailCadastrado').textContent = email;
+          document.getElementById('codigoCadastrado').textContent = codigo;
+          renderizarTabela();
+        } else {
+          erroEl.textContent = resultado.erro;
+          erroEl.style.display = 'block';
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { aguardarPronto(); });
+  </script>
+</body>
+</html>
