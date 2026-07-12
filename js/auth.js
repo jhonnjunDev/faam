@@ -37,7 +37,7 @@ const Auth = {
 
     if (DB.modoSupabase) {
       for (const u of usuariosPadrao) {
-        const { error } = await supabase.from('usuarios').upsert(u);
+        const { error } = await clientSupabase.from('usuarios').upsert(u);
         if (error) console.error('Erro ao criar usuário:', error);
       }
     } else {
@@ -47,7 +47,7 @@ const Auth = {
 
   async obterUsuarios() {
     if (DB.modoSupabase) {
-      const { data, error } = await supabase.from('usuarios').select('*');
+      const { data, error } = await clientSupabase.from('usuarios').select('*');
       if (error) { console.error(error); return []; }
       return data || [];
     }
@@ -120,7 +120,7 @@ const Auth = {
     };
 
     if (DB.modoSupabase) {
-      const { error } = await supabase.from('usuarios').insert(novoUsuario);
+      const { error } = await clientSupabase.from('usuarios').insert(novoUsuario);
       if (error) {
         console.error(error);
         return { sucesso: false, erro: 'Erro ao cadastrar usuário.' };

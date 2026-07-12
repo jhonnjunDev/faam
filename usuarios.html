@@ -151,7 +151,7 @@
       if (!Utils.confirmar(`Deseja realmente excluir o usuário "${nome}"?`)) return;
 
       if (DB.modoSupabase) {
-        await supabase.from('usuarios').delete().eq('id', id);
+        await clientSupabase.from('usuarios').delete().eq('id', id);
       } else {
         const usuarios = (await Auth.obterUsuarios()).filter(u => u.id !== id);
         localStorage.setItem(Auth.CHAVE_USUARIOS, JSON.stringify(usuarios));

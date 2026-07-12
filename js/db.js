@@ -23,17 +23,17 @@ const DB = {
 
   async _syncSeed() {
     // Verificar se já existem dados no Supabase
-    const { data: pac } = await supabase.from('pacientes').select('id').limit(1);
+    const { data: pac } = await clientSupabase.from('pacientes').select('id').limit(1);
     if (pac && pac.length > 0) return; // Já tem dados
 
     // Inserir dados iniciais
     const pacientes = DadosIniciais.pacientes;
     const relatorios = DadosIniciais.relatorios;
 
-    const { error: errPac } = await supabase.from('pacientes').insert(pacientes);
+    const { error: errPac } = await clientSupabase.from('pacientes').insert(pacientes);
     if (errPac) console.error('Erro ao inserir pacientes:', errPac);
 
-    const { error: errRel } = await supabase.from('relatorios').insert(relatorios);
+    const { error: errRel } = await clientSupabase.from('relatorios').insert(relatorios);
     if (errRel) console.error('Erro ao inserir relatórios:', errRel);
 
     // Criar admin padrão
@@ -48,7 +48,7 @@ const DB = {
   // ===== PACIENTES =====
   async obterPacientes() {
     if (this.modoSupabase) {
-      const { data, error } = await supabase.from('pacientes').select('*');
+      const { data, error } = await clientSupabase.from('pacientes').select('*');
       if (error) { console.error(error); return []; }
       return data || [];
     }
@@ -66,7 +66,7 @@ const DB = {
 
   async obterPacientePorId(id) {
     if (this.modoSupabase) {
-      const { data, error } = await supabase.from('pacientes').select('*').eq('id', id).single();
+      const { data, error } = await clientSupabase.from('pacientes').select('*').eq('id', id).single();
       if (error) { console.error(error); return null; }
       return data;
     }
@@ -82,7 +82,7 @@ const DB = {
     };
 
     if (this.modoSupabase) {
-      const { error } = await supabase.from('pacientes').insert(paciente);
+      const { error } = await clientSupabase.from('pacientes').insert(paciente);
       if (error) { console.error(error); Utils.mostrarToast('Erro ao salvar.', 'error'); return null; }
     } else {
       const pacientes = await this.obterPacientes();
@@ -96,7 +96,7 @@ const DB = {
     dados.atualizado_em = new Date().toISOString();
 
     if (this.modoSupabase) {
-      const { error } = await supabase.from('pacientes').update(dados).eq('id', id);
+      const { error } = await clientSupabase.from('pacientes').update(dados).eq('id', id);
       if (error) { console.error(error); Utils.mostrarToast('Erro ao atualizar.', 'error'); return null; }
     } else {
       const pacientes = await this.obterPacientes();
@@ -110,8 +110,8 @@ const DB = {
 
   async excluirPaciente(id) {
     if (this.modoSupabase) {
-      await supabase.from('relatorios').delete().eq('paciente_id', id);
-      await supabase.from('pacientes').delete().eq('id', id);
+      await clientSupabase.from('relatorios').delete().eq('paciente_id', id);
+      await clientSupabase.from('pacientes').delete().eq('id', id);
     } else {
       const pacientes = (await this.obterPacientes()).filter(p => p.id !== id);
       this.salvarPacientes(pacientes);
@@ -144,7 +144,7 @@ const DB = {
   // ===== RELATÓRIOS =====
   async obterRelatorios() {
     if (this.modoSupabase) {
-      const { data, error } = await supabase.from('relatorios').select('*');
+      const { data, error } = await clientSupabase.from('relatorios').select('*');
       if (error) { console.error(error); return []; }
       return data || [];
     }
@@ -159,7 +159,7 @@ const DB = {
 
   async obterRelatorioPorId(id) {
     if (this.modoSupabase) {
-      const { data, error } = await supabase.from('relatorios').select('*').eq('id', id).single();
+      const { data, error } = await clientSupabase.from('relatorios').select('*').eq('id', id).single();
       if (error) { console.error(error); return null; }
       return data;
     }
@@ -168,7 +168,7 @@ const DB = {
 
   async obterRelatoriosPorPaciente(pacienteId) {
     if (this.modoSupabase) {
-      const { data, error } = await supabase.from('relatorios')
+      const { data, error } = await clientSupabase.from('relatorios')
         .select('*')
         .eq('paciente_id', pacienteId)
         .order('criado_em', { ascending: false });
@@ -188,7 +188,7 @@ const DB = {
     };
 
     if (this.modoSupabase) {
-      const { error } = await supabase.from('relatorios').insert(relatorio);
+      const { error } = await clientSupabase.from('relatorios').insert(relatorio);
       if (error) { console.error(error); Utils.mostrarToast('Erro ao salvar.', 'error'); return null; }
     } else {
       const relatorios = await this.obterRelatorios();
@@ -200,7 +200,7 @@ const DB = {
 
   async excluirRelatorio(id) {
     if (this.modoSupabase) {
-      await supabase.from('relatorios').delete().eq('id', id);
+      await clientSupabase.from('relatorios').delete().eq('id', id);
     } else {
       const relatorios = (await this.obterRelatorios()).filter(r => r.id !== id);
       this.salvarRelatorios(relatorios);
@@ -274,8 +274,8 @@ const DB = {
 
   async resetarDados() {
     if (this.modoSupabase) {
-      await supabase.from('relatorios').delete().neq('id', '');
-      await supabase.from('pacientes').delete().neq('id', '');
+      await clientSupabase.from('relatorios').delete().neq('id', '');
+      await clientSupabase.from('pacientes').delete().neq('id', '');
       await this._syncSeed();
     } else {
       localStorage.removeItem(this.CHAVE_PACIENTES);
