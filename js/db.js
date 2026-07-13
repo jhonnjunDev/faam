@@ -28,35 +28,21 @@ const DB = {
     this._sincronizando = true;
 
     try {
-      // Verificar se ja existem pacientes no banco
-      const { data: existentes, error: erroSelect } = await clientSupabase.from('pacientes').select('id');
-      if (erroSelect) { console.error('Erro ao verificar pacientes:', erroSelect); return; }
-
-      const idsExistentes = (existentes || []).map(p => p.id);
-      const pacientesNovos = DadosIniciais.pacientes.filter(p => !idsExistentes.includes(p.id));
-
-      if (pacientesNovos.length > 0) {
-        const { error } = await clientSupabase.from('pacientes').insert(pacientesNovos);
-        if (error) console.error('Erro ao inserir pacientes novos:', error);
-        else console.log(`✅ ${pacientesNovos.length} paciente(s) novo(s) inserido(s)`);
-      }
-
-      // Verificar relatórios faltantes
-      const { data: existRel } = await clientSupabase.from('relatorios').select('id');
-      const idsRelExistentes = (existRel || []).map(r => r.id);
-      const relNovos = DadosIniciais.relatorios.filter(r => !idsRelExistentes.includes(r.id));
-
-      if (relNovos.length > 0) {
-        const { error } = await clientSupabase.from('relatorios').insert(relNovos);
-        if (error) console.error('Erro ao inserir relatórios novos:', error);
-        else console.log(`✅ ${relNovos.length} relatório(s) novo(s) inserido(s)`);
-      }
-
       // Criar admin padrão
       await Auth._criarAdminSupabase();
     } finally {
       this._sincronizando = false;
     }
+  },
+
+  async limparTodosPacientes() {
+    if (!this.modoSupabase) {
+      localStorage.removeItem(this.CHAVE_PACIENTES);
+      localStorage.removeItem(this.CHAVE_RELATORIOS);
+      return;
+    }
+    await clientSupabase.from('relatorios').delete().neq('id', '');
+    await clientSupabase.from('pacientes').delete().neq('id', '');
   },
 
   _seedLocal() {
@@ -292,14 +278,6 @@ const DB = {
   },
 
   async resetarDados() {
-    if (this.modoSupabase) {
-      await clientSupabase.from('relatorios').delete().neq('id', '');
-      await clientSupabase.from('pacientes').delete().neq('id', '');
-      await this._syncSeed();
-    } else {
-      localStorage.removeItem(this.CHAVE_PACIENTES);
-      localStorage.removeItem(this.CHAVE_RELATORIOS);
-      this._seedLocal();
-    }
+    await this.limparTodosPacientes();
   }
 };
