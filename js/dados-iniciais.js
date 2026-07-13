@@ -275,6 +275,40 @@ const DadosIniciais = {
       status: 'obito',
       criado_em: '2020-02-14T10:00:00Z',
       atualizado_em: '2024-01-05T22:30:00Z'
+    },
+    {
+      id: 'pac009',
+      nome: 'Jhonata Junio',
+      cpf: '98765432100',
+      data_nascimento: '1990-05-15',
+      sexo: 'M',
+      estado_civil: 'Solteiro(a)',
+      naturalidade: 'São Paulo, SP',
+      telefone: '11999887700',
+      email: '',
+      endereco_rua: 'Rua das Flores, 500',
+      endereco_bairro: 'Centro',
+      endereco_cidade: 'São Paulo',
+      endereco_cep: '01234567',
+      contato_nome: 'Maria Junio',
+      contato_parentesco: 'Mãe',
+      contato_telefone: '11988776600',
+      data_entrada: '2026-07-12',
+      quarto: '105',
+      tipo_acomodacao: 'Individual',
+      responsavel_legal: 'Maria Junio',
+      diagnostico_principal: 'Acompanhamento Pós-Operatório',
+      diagnosticos_secundarios: 'Nenhum',
+      alergias: 'Nenhuma conhecida',
+      medicamentos: 'Dipirona 500mg, Ibuprofeno 600mg',
+      historico_cirurgias: 'Apendicectomia (2025)',
+      historico_internacoes: 'Nenhuma anterior',
+      doencas_cronicas: 'Nenhuma',
+      responsavel_acompanhamento: 'Dr. Carlos Mendes',
+      observacoes: 'Paciente em recuperação pós-operatória. Retorno em 30 dias.',
+      status: 'ativo',
+      criado_em: '2026-07-12T10:00:00Z',
+      atualizado_em: '2026-07-12T10:00:00Z'
     }
   ],
 
@@ -332,6 +366,15 @@ const DadosIniciais = {
       profissional: 'Dr. Carlos Mendes',
       descricao: 'RELATÓRIO DE ALTA\n\nPaciente Luzia Aparecida Costa, 75 anos.\n\nInternação: 01/11/2023 a 28/01/2024.\n\nMotivo: Reabilitação pós-artroplastia de quadril.\n\nEvolução: Paciente evoluiu bem no pós-operatório. Recuperação da mobilidade com auxílio de muleta. Dor controlada. Sem sinais de infecção.\n\nConclusão: Alta com orientações de reabilitação domiciliar. Retorno ambulatorial em 30 dias.',
       criado_em: '2024-01-28T14:00:00Z'
+    },
+    {
+      id: 'rel007',
+      paciente_id: 'pac009',
+      tipo: 'evolucao',
+      data: '2026-07-12',
+      profissional: 'Dr. Carlos Mendes',
+      descricao: 'EVOLUÇÃO CLÍNICA\n\nPaciente Jhonata Junio, 36 anos.\n\nData de internação: 12/07/2026.\n\nMotivo: Acompanhamento pós-operatório de apendicectomia.\n\nEvolução: Paciente em pós-operatório de apendicectomia videolaparoscópica (24/06/2025). Boa evolução. Sem sinais de infecção na ferida operatória. Dor controlada com analgesia oral. Alimentação via oral tolerada. Atividade física leve liberada.\n\nExame Físico: PA: 120/80 mmHg, FC: 72 bpm, Temp: 36.5°C. Abdome flácido, sem sinais de irritação peritoneal. Ferida operatória limpa, sem sinais de flogose.\n\nConduta: Manter analgesia conforme prescrição. Retorno em 30 dias para reavaliação. Orientações de cuidados com a ferida.',
+      criado_em: '2026-07-12T14:30:00Z'
     }
   ]
 };
