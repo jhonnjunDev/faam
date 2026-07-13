@@ -174,7 +174,7 @@
           return;
         }
 
-        DB.editarPaciente(id, dados);
+        await DB.editarPaciente(id, dados);
         Utils.mostrarToast('Paciente atualizado com sucesso!');
         setTimeout(() => { window.location.href = `paciente-ficha.html?id=${id}`; }, 800);
       });

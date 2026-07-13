@@ -126,7 +126,7 @@
           return;
         }
 
-        const relatorio = DB.cadastrarRelatorio(dados);
+        const relatorio = await DB.cadastrarRelatorio(dados);
         Utils.mostrarToast('Relatório salvo com sucesso!');
         setTimeout(() => {
           window.location.href = `relatorio-detalhe.html?id=${relatorio.id}`;

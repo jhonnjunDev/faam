@@ -279,7 +279,7 @@
           return;
         }
 
-        const paciente = DB.cadastrarPaciente(dados);
+        const paciente = await DB.cadastrarPaciente(dados);
         Utils.mostrarToast('Paciente cadastrado com sucesso!');
         setTimeout(() => {
           window.location.href = `paciente-ficha.html?id=${paciente.id}`;
