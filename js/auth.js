@@ -148,7 +148,7 @@ const Auth = {
   estaOnline(usuarioId) {
     const online = this.obterOnline();
     return !!online[usuarioId];
-  }
+  },
 
   obterSessao() {
     const dados = sessionStorage.getItem(this.CHAVE_SESSAO);
