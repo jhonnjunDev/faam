@@ -22,19 +22,31 @@ const DB = {
   },
 
   async _syncSeed() {
-    // Verificar se já existem dados no Supabase
-    const { data: pac } = await clientSupabase.from('pacientes').select('id').limit(1);
-    if (pac && pac.length > 0) return; // Já tem dados
+    // Verificar se o paciente Jhonata Junio existe (pac009)
+    const { data: check } = await clientSupabase.from('pacientes').select('id').eq('id', 'pac009').limit(1);
+    if (check && check.length > 0) return; // Já tem todos os dados
 
-    // Inserir dados iniciais
-    const pacientes = DadosIniciais.pacientes;
-    const relatorios = DadosIniciais.relatorios;
+    // Verificar quais pacientes faltam e inserir apenas esses
+    const { data: existentes } = await clientSupabase.from('pacientes').select('id');
+    const idsExistentes = (existentes || []).map(p => p.id);
+    const pacientesNovos = DadosIniciais.pacientes.filter(p => !idsExistentes.includes(p.id));
 
-    const { error: errPac } = await clientSupabase.from('pacientes').insert(pacientes);
-    if (errPac) console.error('Erro ao inserir pacientes:', errPac);
+    if (pacientesNovos.length > 0) {
+      const { error } = await clientSupabase.from('pacientes').insert(pacientesNovos);
+      if (error) console.error('Erro ao inserir pacientes novos:', error);
+      else console.log(`✅ ${pacientesNovos.length} paciente(s) novo(s) inserido(s)`);
+    }
 
-    const { error: errRel } = await clientSupabase.from('relatorios').insert(relatorios);
-    if (errRel) console.error('Erro ao inserir relatórios:', errRel);
+    // Verificar relatórios faltantes
+    const { data: existRel } = await clientSupabase.from('relatorios').select('id');
+    const idsRelExistentes = (existRel || []).map(r => r.id);
+    const relNovos = DadosIniciais.relatorios.filter(r => !idsRelExistentes.includes(r.id));
+
+    if (relNovos.length > 0) {
+      const { error } = await clientSupabase.from('relatorios').insert(relNovos);
+      if (error) console.error('Erro ao inserir relatórios novos:', error);
+      else console.log(`✅ ${relNovos.length} relatório(s) novo(s) inserido(s)`);
+    }
 
     // Criar admin padrão
     await Auth._criarAdminSupabase();
