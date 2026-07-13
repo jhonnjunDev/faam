@@ -28,8 +28,8 @@ const DB = {
     this._sincronizando = true;
 
     try {
-      // Criar admin padrão
-      await Auth._criarAdminSupabase();
+      // Criar usuários iniciais (admin padrão)
+      await Auth.criarUsuariosIniciais();
     } finally {
       this._sincronizando = false;
     }
