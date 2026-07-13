@@ -89,17 +89,17 @@ asilovida/
 
 ## Permissões por Perfil
 
-| Recurso | Admin | Médico | Assist. Social |
-|---------|-------|--------|----------------|
-| Dashboard | ✅ | ✅ | ✅ |
-| Listar Pacientes | ✅ | ✅ | ✅ |
-| Novo Paciente | ✅ | ✅ | ❌ |
-| Editar Paciente | ✅ | ✅ | ❌ |
-| Ver Ficha | ✅ | ✅ | ✅ |
-| Listar Relatórios | ✅ | ✅ | ✅ |
-| Novo Relatório | ✅ | ✅ | ❌ |
-| Ver Relatório | ✅ | ✅ | ✅ |
-| Gerenciar Usuários | ✅ | ❌ | ❌ |
+| Recurso | Admin | Médico | Enfermeiro | Téc. Enfermagem | Assist. Social |
+|---------|-------|--------|------------|-----------------|----------------|
+| Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Listar Pacientes | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Novo Paciente | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Editar Paciente | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Ver Ficha | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Listar Relatórios | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Novo Relatório | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Ver Relatório | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Gerenciar Usuários | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ## Observações
 

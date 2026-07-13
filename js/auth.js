@@ -113,6 +113,8 @@ const Auth = {
     const permissoes = {
       'admin': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
+      'enfermeiro': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
+      'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
       'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe']
     };
 
@@ -166,7 +168,7 @@ const Auth = {
     if (!sessao) return;
 
     const iniciais = Utils.obterIniciais(sessao.nome);
-    const perfilLabel = { admin: 'Administrador', medico: 'Médico', assistente_social: 'Assist. Social' };
+    const perfilLabel = { admin: 'Administrador', medico: 'Médico', enfermeiro: 'Enfermeiro', tecnico_enfermagem: 'Técnico Enfermagem', assistente_social: 'Assist. Social' };
 
     return `
       <aside class="sidebar" id="sidebar">
@@ -193,7 +195,7 @@ const Auth = {
           <a href="relatorios.html" class="${paginaAtual === 'relatorios' ? 'active' : ''}">
             <i class="fas fa-file-medical"></i> Relatórios
           </a>
-          ${sessao.perfil !== 'assistente_social' ? `
+          ${sessao.perfil !== 'assistente_social' && sessao.perfil !== 'tecnico_enfermagem' ? `
           <a href="relatorio-novo.html" class="${paginaAtual === 'relatorio-novo' ? 'active' : ''}">
             <i class="fas fa-plus-circle"></i> Novo Relatório
           </a>` : ''}
