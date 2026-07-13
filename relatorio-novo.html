@@ -90,10 +90,10 @@
         const pacientes = (await DB.obterPacientes()).filter(p => p.status === 'ativo');
         pacientes.forEach(p => {
           const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = `${p.nome} (Quarto ${p.quarto || '-'})`;
-        selectPaciente.appendChild(opt);
-      });
+          opt.value = p.id;
+          opt.textContent = `${p.nome} (Quarto ${p.quarto || '-'})`;
+          selectPaciente.appendChild(opt);
+        });
 
       // Se veio de paciente específico
       const pacienteId = Utils.obterParametroUrl('paciente');
@@ -110,7 +110,7 @@
         document.getElementById('profissional').value = sessao.nome;
       }
 
-      document.getElementById('formRelatorio').addEventListener('submit', (e) => {
+      document.getElementById('formRelatorio').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const dados = {

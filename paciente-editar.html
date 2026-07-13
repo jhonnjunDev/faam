@@ -164,7 +164,7 @@
         e.target.value = v;
       });
 
-      document.getElementById('formEditar').addEventListener('submit', (e) => {
+      document.getElementById('formEditar').addEventListener('submit', async (e) => {
         e.preventDefault();
         const dados = {};
         campos.forEach(c => { dados[c] = document.getElementById(c).value.trim(); });
