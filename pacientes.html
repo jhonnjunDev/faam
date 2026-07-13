@@ -95,6 +95,8 @@
     function renderizarTabela(pacientes) {
       const tbody = document.getElementById('tabelaPacientes');
       const vazio = document.getElementById('estadoVazio');
+      const sessao = Auth.obterSessao();
+      const isAdmin = sessao && sessao.perfil === 'admin';
       if (pacientes.length === 0) { tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
       vazio.style.display = 'none';
       tbody.innerHTML = pacientes.map(p => `
@@ -116,10 +118,22 @@
           <td class="text-right no-print">
             <div style="display:flex; gap:6px; justify-content:flex-end;">
               <a href="paciente-ficha.html?id=${p.id}" class="btn btn-sm btn-outline" onclick="event.stopPropagation()"><i class="fas fa-eye"></i></a>
+              ${isAdmin ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); excluirPacienteLista('${p.id}', '${Utils.escapeHtml(p.nome)}')" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
             </div>
           </td>
         </tr>
       `).join('');
+    }
+
+    async function excluirPacienteLista(id, nome) {
+      if (!Utils.confirmar(`Deseja realmente excluir o paciente "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+      const resultado = await DB.excluirPaciente(id);
+      if (resultado !== false) {
+        Utils.mostrarToast('Paciente excluído com sucesso!');
+        filtrar();
+      } else {
+        Utils.mostrarToast('Erro ao excluir paciente.', 'error');
+      }
     }
 
     function esperar() {
