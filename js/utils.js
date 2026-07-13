@@ -114,15 +114,23 @@ const Utils = {
 
   mostrarToast(mensagem, tipo = 'success') {
     const toast = document.createElement('div');
+    const cores = { success: '#22c55e', error: '#ef4444', info: '#3b82f6' };
+    const icones = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
     toast.style.cssText = `
       position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-      background: ${tipo === 'success' ? '#38a169' : tipo === 'error' ? '#e53e3e' : '#3182ce'};
-      color: #fff; padding: 14px 24px; border-radius: 10px;
-      font-size: 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-      animation: slideUp 0.3s ease;
+      background: ${cores[tipo] || cores.info};
+      color: #fff; padding: 16px 28px; border-radius: 12px;
+      font-size: 15px; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      display: flex; align-items: center; gap: 10px;
+      animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.3s, transform 0.3s;
     `;
-    toast.textContent = mensagem;
+    toast.innerHTML = `<i class="fas ${icones[tipo] || icones.info}"></i> ${mensagem}`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(20px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
   }
 };
