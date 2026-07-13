@@ -7,6 +7,8 @@ const DB = {
   CHAVE_RELATORIOS: 'relatorios_asilo',
   modoSupabase: false,
 
+  _sincronizando: false,
+
   async init() {
     this.modoSupabase = verificarSupabase();
 
@@ -22,34 +24,39 @@ const DB = {
   },
 
   async _syncSeed() {
-    // Verificar se o paciente Jhonata Junio existe (pac009)
-    const { data: check } = await clientSupabase.from('pacientes').select('id').eq('id', 'pac009').limit(1);
-    if (check && check.length > 0) return; // Já tem todos os dados
+    if (this._sincronizando) return;
+    this._sincronizando = true;
 
-    // Verificar quais pacientes faltam e inserir apenas esses
-    const { data: existentes } = await clientSupabase.from('pacientes').select('id');
-    const idsExistentes = (existentes || []).map(p => p.id);
-    const pacientesNovos = DadosIniciais.pacientes.filter(p => !idsExistentes.includes(p.id));
+    try {
+      // Verificar se ja existem pacientes no banco
+      const { data: existentes, error: erroSelect } = await clientSupabase.from('pacientes').select('id');
+      if (erroSelect) { console.error('Erro ao verificar pacientes:', erroSelect); return; }
 
-    if (pacientesNovos.length > 0) {
-      const { error } = await clientSupabase.from('pacientes').insert(pacientesNovos);
-      if (error) console.error('Erro ao inserir pacientes novos:', error);
-      else console.log(`✅ ${pacientesNovos.length} paciente(s) novo(s) inserido(s)`);
+      const idsExistentes = (existentes || []).map(p => p.id);
+      const pacientesNovos = DadosIniciais.pacientes.filter(p => !idsExistentes.includes(p.id));
+
+      if (pacientesNovos.length > 0) {
+        const { error } = await clientSupabase.from('pacientes').insert(pacientesNovos);
+        if (error) console.error('Erro ao inserir pacientes novos:', error);
+        else console.log(`✅ ${pacientesNovos.length} paciente(s) novo(s) inserido(s)`);
+      }
+
+      // Verificar relatórios faltantes
+      const { data: existRel } = await clientSupabase.from('relatorios').select('id');
+      const idsRelExistentes = (existRel || []).map(r => r.id);
+      const relNovos = DadosIniciais.relatorios.filter(r => !idsRelExistentes.includes(r.id));
+
+      if (relNovos.length > 0) {
+        const { error } = await clientSupabase.from('relatorios').insert(relNovos);
+        if (error) console.error('Erro ao inserir relatórios novos:', error);
+        else console.log(`✅ ${relNovos.length} relatório(s) novo(s) inserido(s)`);
+      }
+
+      // Criar admin padrão
+      await Auth._criarAdminSupabase();
+    } finally {
+      this._sincronizando = false;
     }
-
-    // Verificar relatórios faltantes
-    const { data: existRel } = await clientSupabase.from('relatorios').select('id');
-    const idsRelExistentes = (existRel || []).map(r => r.id);
-    const relNovos = DadosIniciais.relatorios.filter(r => !idsRelExistentes.includes(r.id));
-
-    if (relNovos.length > 0) {
-      const { error } = await clientSupabase.from('relatorios').insert(relNovos);
-      if (error) console.error('Erro ao inserir relatórios novos:', error);
-      else console.log(`✅ ${relNovos.length} relatório(s) novo(s) inserido(s)`);
-    }
-
-    // Criar admin padrão
-    await Auth._criarAdminSupabase();
   },
 
   _seedLocal() {

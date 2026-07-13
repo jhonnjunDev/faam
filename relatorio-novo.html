@@ -110,8 +110,12 @@
         document.getElementById('profissional').value = sessao.nome;
       }
 
+      let salvando = false;
       document.getElementById('formRelatorio').addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (salvando) return;
+        salvando = true;
+        document.getElementById('btnSalvar').disabled = true;
 
         const dados = {
           paciente_id: document.getElementById('paciente_id').value,
@@ -123,10 +127,17 @@
 
         if (!dados.paciente_id || !dados.tipo || !dados.data || !dados.profissional || !dados.descricao) {
           Utils.mostrarToast('Preencha todos os campos obrigatórios.', 'error');
+          salvando = false;
+          document.getElementById('btnSalvar').disabled = false;
           return;
         }
 
         const relatorio = await DB.cadastrarRelatorio(dados);
+        if (!relatorio) {
+          salvando = false;
+          document.getElementById('btnSalvar').disabled = false;
+          return;
+        }
         Utils.mostrarToast('Relatório salvo com sucesso!');
         setTimeout(() => {
           window.location.href = `relatorio-detalhe.html?id=${relatorio.id}`;
