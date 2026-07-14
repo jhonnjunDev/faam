@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://htfhfutjhlqktbzjbiuc.supabase.co wss://htfhfutjhlqktbzjbiuc.supabase.co; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;">
   <title>Usuários - FAAM</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
@@ -73,7 +74,7 @@
         </div>
         <div class="mb-2">
           <label class="form-label">Código de Acesso *</label>
-          <input type="text" class="form-control" id="cadCodigo" placeholder="Mínimo 4 caracteres" required minlength="4" maxlength="10" style="text-align:center; font-size:18px; letter-spacing:4px; font-weight:700;">
+          <input type="password" class="form-control" id="cadCodigo" placeholder="Mínimo 6 caracteres" required minlength="6" maxlength="20" style="text-align:center; font-size:18px; letter-spacing:4px; font-weight:700;">
           <small style="color:var(--text-light); font-size:12px;">O funcionário usará este código para fazer login</small>
         </div>
         <div class="mb-2">
@@ -130,7 +131,7 @@
             </div>
           </td>
           <td>${Utils.escapeHtml(u.email)}</td>
-          <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">${u.codigo}</code></td>
+          <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">••••••</code></td>
           <td>${perfilLabels[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
             ${u.id !== sessao.id ? `
@@ -206,8 +207,8 @@
           return;
         }
 
-        if (codigo.length < 4) {
-          erroEl.textContent = 'O código deve ter pelo menos 4 caracteres.';
+        if (codigo.length < 6) {
+          erroEl.textContent = 'O código deve ter pelo menos 6 caracteres.';
           erroEl.style.display = 'block';
           return;
         }

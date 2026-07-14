@@ -79,6 +79,9 @@ const DB = {
   },
 
   async cadastrarPaciente(dados) {
+    // Sanitizar dados antes de salvar
+    dados = Utils.sanitizarDados(dados);
+
     const paciente = {
       id: Utils.gerarId(),
       ...dados,
@@ -98,6 +101,8 @@ const DB = {
   },
 
   async editarPaciente(id, dados) {
+    // Sanitizar dados antes de salvar
+    dados = Utils.sanitizarDados(dados);
     dados.atualizado_em = new Date().toISOString();
 
     if (this.modoSupabase) {
@@ -188,6 +193,9 @@ const DB = {
   },
 
   async cadastrarRelatorio(dados) {
+    // Sanitizar dados antes de salvar
+    dados = Utils.sanitizarDados(dados);
+
     const relatorio = {
       id: Utils.gerarId(),
       ...dados,

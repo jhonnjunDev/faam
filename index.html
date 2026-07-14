@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://htfhfutjhlqktbzjbiuc.supabase.co wss://htfhfutjhlqktbzjbiuc.supabase.co; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;">
   <title>FAAM - Login</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
@@ -28,7 +29,7 @@
         </div>
         <div class="mb-2">
           <label class="form-label">Código de Acesso</label>
-          <input type="text" class="form-control" id="codigo" placeholder="• • • •" required maxlength="10" style="text-align:center; font-size:20px; letter-spacing:6px; font-weight:700;">
+          <input type="password" class="form-control" id="codigo" placeholder="• • • • • •" required minlength="6" maxlength="20" style="text-align:center; font-size:20px; letter-spacing:6px; font-weight:700;">
         </div>
         <button type="submit" class="btn btn-primary" id="btnLogin" style="margin-top:12px">
           <i class="fas fa-sign-in-alt"></i> Entrar

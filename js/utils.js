@@ -50,9 +50,53 @@ const Utils = {
   },
 
   sanitizar(str) {
+    if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  },
+
+  // Sanitizar dados antes de enviar ao Supabase (remove scripts e tags perigosas)
+  sanitizarDados(dados) {
+    const sanitizado = {};
+    for (const [chave, valor] of Object.entries(dados)) {
+      if (typeof valor === 'string') {
+        // Remove tags HTML e scripts
+        sanitizado[chave] = valor
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+          .replace(/on\w+="[^"]*"/gi, '')
+          .replace(/on\w+='[^']*'/gi, '')
+          .replace(/javascript:/gi, '')
+          .replace(/data:/gi, '')
+          .trim();
+      } else {
+        sanitizado[chave] = valor;
+      }
+    }
+    return sanitizado;
+  },
+
+  // Validar email
+  validarEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  },
+
+  // Validar CPF
+  validarCPF(cpf) {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cpf)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    if (resto !== parseInt(cpf[9])) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    return resto === parseInt(cpf[10]);
   },
 
   truncar(str, max) {

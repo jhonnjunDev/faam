@@ -1,5 +1,9 @@
 /* ========================================
    Configuração do Supabase
+   ========================================
+   SEGURANÇA: Esta chave é pública (anon key) e segura no client-side
+   SOMENTE se o RLS (Row Level Security) estiver habilitado no Supabase.
+   Execute o supabase-setup.sql para configurar as políticas de acesso.
    ======================================== */
 
 const SUPABASE_URL = 'https://htfhfutjhlqktbzjbiuc.supabase.co';
@@ -9,14 +13,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let clientSupabase = null;
 
 if (SUPABASE_URL !== 'COLE_AQUI_SEU_PROJECT_URL' && window.supabase) {
-  clientSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('✅ Supabase configurado!');
+  clientSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
 }
 
 // Verificar se Supabase está configurado
 function verificarSupabase() {
   if (!clientSupabase || SUPABASE_URL === 'COLE_AQUI_SEU_PROJECT_URL') {
-    console.warn('⚠️ Supabase não configurado. Usando modo offline.');
     return false;
   }
   return true;

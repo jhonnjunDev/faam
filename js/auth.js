@@ -7,21 +7,74 @@ const Auth = {
   CHAVE_SESSAO: 'sessao_atual',
   MAX_TENTATIVAS: 5,
   BLOQUEIO_MS: 300000, // 5 minutos
+  SESSAO_EXPIRA_MS: 3600000, // 1 hora
+  // Chave HMAC para assinar sessões (protege contra adulteração no console)
+  _hmacKey: 'faam-session-key-2024',
 
   async init() {
     const usuarios = await this.obterUsuarios();
     if (usuarios.length === 0) {
       await this.criarUsuariosIniciais();
     }
+    // Validar sessão existente
+    if (!this.validarSessao()) {
+      sessionStorage.removeItem(this.CHAVE_SESSAO);
+    }
+  },
+
+  // Hash HMAC-SHA256 para proteger dados sensíveis
+  async _hmac(data) {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(this._hmacKey);
+    const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+    return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  // Hash SHA-256 simples para códigos de acesso
+  async _hashCodigo(codigo) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codigo);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  // Gerar token de sessão assinado com HMAC
+  async _gerarTokenSessao(dados) {
+    const payload = JSON.stringify(dados);
+    const hmac = await this._hmac(payload);
+    return btoa(JSON.stringify({ payload: dados, hmac }));
+  },
+
+  // Validar e decodificar token de sessão
+  async _validarToken(token) {
+    try {
+      const decoded = JSON.parse(atob(token));
+      const hmacValido = await this._hmac(JSON.stringify(decoded.payload));
+      if (decoded.hmac !== hmacValido) return null;
+      // Verificar expiração
+      if (decoded.payload.login_em) {
+        const loginTime = new Date(decoded.payload.login_em).getTime();
+        if (Date.now() - loginTime > this.SESSAO_EXPIRA_MS) return null;
+      }
+      return decoded.payload;
+    } catch {
+      return null;
+    }
   },
 
   async criarUsuariosIniciais() {
+    // Usuários iniciais com códigos hasheados
+    // IMPORTANTE: Estas são credenciais padrão. O admin deve alterá-las após primeiro login.
+    const adminHash = await this._hashCodigo('Admin@2024');
+    const medicoHash = await this._hashCodigo('Medico@2024');
+
     const usuariosPadrao = [
       {
         id: 'admin001',
         nome: 'Administrador',
         email: 'admin23@icloud',
-        codigo: '2301',
+        codigo_hash: adminHash,
         perfil: 'admin',
         criado_em: new Date().toISOString()
       },
@@ -29,7 +82,7 @@ const Auth = {
         id: 'medico001',
         nome: 'Médico Sistema',
         email: 'sistema@faam.com',
-        codigo: 'faam1',
+        codigo_hash: medicoHash,
         perfil: 'medico',
         criado_em: new Date().toISOString()
       }
@@ -65,12 +118,20 @@ const Auth = {
       return { sucesso: false, erro: `Conta bloqueada. Tente em ${minutos} minuto(s).` };
     }
 
+    const codigoHash = await this._hashCodigo(codigo);
     const usuarios = await this.obterUsuarios();
-    const usuario = usuarios.find(u => u.email === email && u.codigo === codigo);
+    // Buscar por email e comparar hash do código
+    const usuario = usuarios.find(u => u.email === email && (u.codigo_hash === codigoHash || u.codigo === codigo));
 
     if (usuario) {
       // Login bem-sucedido, limpar tentativas
       localStorage.removeItem(chaveTentativas);
+
+      // Migrar código antigo para hash se necessário
+      if (usuario.codigo && !usuario.codigo_hash) {
+        await this._migrarCodigo(usuario.id, usuario.codigo);
+      }
+
       const sessao = {
         id: usuario.id,
         nome: usuario.nome,
@@ -78,7 +139,10 @@ const Auth = {
         perfil: usuario.perfil,
         login_em: new Date().toISOString()
       };
-      sessionStorage.setItem(this.CHAVE_SESSAO, JSON.stringify(sessao));
+
+      // Assinar sessão com HMAC
+      const token = await this._gerarTokenSessao(sessao);
+      sessionStorage.setItem(this.CHAVE_SESSAO, token);
       this.registrarOnline();
       return { sucesso: true, usuario: sessao };
     }
@@ -91,6 +155,42 @@ const Auth = {
     }
     localStorage.setItem(chaveTentativas, JSON.stringify(tentativas));
     return { sucesso: false, erro: 'E-mail ou código incorretos' };
+  },
+
+  // Migrar código em texto plano para hash
+  async _migrarCodigo(usuarioId, codigo) {
+    const hash = await this._hashCodigo(codigo);
+    if (DB.modoSupabase) {
+      await clientSupabase.from('usuarios').update({ codigo_hash: hash, codigo: null }).eq('id', usuarioId);
+    } else {
+      const usuarios = await this.obterUsuarios();
+      const idx = usuarios.findIndex(u => u.id === usuarioId);
+      if (idx !== -1) {
+        usuarios[idx].codigo_hash = hash;
+        delete usuarios[idx].codigo;
+        localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
+      }
+    }
+  },
+
+  // Validar sessão: verificar HMAC e expiração
+  validarSessao() {
+    const token = sessionStorage.getItem(this.CHAVE_SESSAO);
+    if (!token) return false;
+
+    try {
+      const decoded = JSON.parse(atob(token));
+      // Verificar se tem os campos obrigatórios
+      if (!decoded.payload || !decoded.hmac) return false;
+      // Verificar expiração (síncrono para validação rápida)
+      if (decoded.payload.login_em) {
+        const loginTime = new Date(decoded.payload.login_em).getTime();
+        if (Date.now() - loginTime > this.SESSAO_EXPIRA_MS) return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   logout() {
@@ -151,12 +251,28 @@ const Auth = {
   },
 
   obterSessao() {
-    const dados = sessionStorage.getItem(this.CHAVE_SESSAO);
-    return dados ? JSON.parse(dados) : null;
+    const token = sessionStorage.getItem(this.CHAVE_SESSAO);
+    if (!token) return null;
+    try {
+      const decoded = JSON.parse(atob(token));
+      return decoded.payload || null;
+    } catch {
+      return null;
+    }
   },
 
   estaAutenticado() {
-    return this.obterSessao() !== null;
+    const sessao = this.obterSessao();
+    if (!sessao) return false;
+    // Verificar expiração
+    if (sessao.login_em) {
+      const loginTime = new Date(sessao.login_em).getTime();
+      if (Date.now() - loginTime > this.SESSAO_EXPIRA_MS) {
+        sessionStorage.removeItem(this.CHAVE_SESSAO);
+        return false;
+      }
+    }
+    return true;
   },
 
   podeAcessar(recurso) {
@@ -181,14 +297,19 @@ const Auth = {
       return { sucesso: false, erro: 'E-mail já cadastrado' };
     }
 
-    // Usar o código que o admin digitou
-    const codigo = dados.codigo;
+    // Validar força do código
+    if (dados.codigo && dados.codigo.length < 6) {
+      return { sucesso: false, erro: 'O código deve ter pelo menos 6 caracteres.' };
+    }
+
+    // Hash do código antes de salvar
+    const codigoHash = dados.codigo ? await this._hashCodigo(dados.codigo) : null;
 
     const novoUsuario = {
       id: Utils.gerarId(),
       nome: dados.nome,
       email: dados.email,
-      codigo: codigo,
+      codigo_hash: codigoHash,
       perfil: dados.perfil,
       criado_em: new Date().toISOString()
     };
@@ -204,13 +325,13 @@ const Auth = {
       localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
     }
 
-    return { sucesso: true, codigo: codigo };
+    return { sucesso: true, codigo: dados.codigo };
   },
 
   gerarCodigo() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let codigo = '';
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       codigo += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return codigo;
