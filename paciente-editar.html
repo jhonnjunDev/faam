@@ -120,6 +120,7 @@
                 <div class="mb-1"><label class="form-label">Diagnósticos Secundários</label><input type="text" class="form-control" id="diagnosticos_secundarios" value="${Utils.escapeHtml(p.diagnosticos_secundarios || '')}"></div>
                 <div class="mb-1"><label class="form-label">Alergias</label><input type="text" class="form-control" id="alergias" value="${Utils.escapeHtml(p.alergias || '')}"></div>
                 <div class="mb-1"><label class="form-label">Medicamentos em Uso</label><textarea class="form-control" id="medicamentos" rows="3">${Utils.escapeHtml(p.medicamentos || '')}</textarea></div>
+                <div class="mb-1"><label class="form-label">Medicamento Controlado</label><select class="form-select" id="medicamento_controlado"><option value="nao" ${p.medicamento_controlado==='nao'?'selected':''}>Não</option><option value="sim" ${p.medicamento_controlado==='sim'?'selected':''}>Sim</option></select></div>
                 <div class="mb-1"><label class="form-label">Histórico de Cirurgias</label><textarea class="form-control" id="historico_cirurgias" rows="2">${Utils.escapeHtml(p.historico_cirurgias || '')}</textarea></div>
                 <div class="mb-1"><label class="form-label">Internações Anteriores</label><textarea class="form-control" id="historico_internacoes" rows="2">${Utils.escapeHtml(p.historico_internacoes || '')}</textarea></div>
                 <div class="mb-1"><label class="form-label">Doenças Crônicas</label><input type="text" class="form-control" id="doencas_cronicas" value="${Utils.escapeHtml(p.doencas_cronicas || '')}"></div>
@@ -174,7 +175,7 @@
             'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
             'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
             'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
-            'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
+            'medicamento_controlado', 'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
             'responsavel_acompanhamento', 'observacoes'
           ];
           campos.forEach(c => { dados[c] = document.getElementById(c).value.trim(); });

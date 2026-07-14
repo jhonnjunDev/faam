@@ -179,6 +179,14 @@
                 <label>Medicamentos em Uso</label>
                 <div class="info-value" style="white-space:pre-wrap; background:#f7fafc; padding:12px; border-radius:8px; margin-top:4px;">${Utils.escapeHtml(paciente.medicamentos) || '-'}</div>
               </div>
+              <div class="info-item" style="margin-top:12px;">
+                <label>Medicamento Controlado</label>
+                <div class="info-value">
+                  ${paciente.medicamento_controlado === 'sim'
+                    ? '<span class="badge badge-controle"><i class="fas fa-pills"></i> Sim - Utiliza medicação controlada</span>'
+                    : '<span style="color:var(--text-light);">Não</span>'}
+                </div>
+              </div>
             </div>
             <div class="info-grid" style="margin-top:16px;">
               <div class="info-item">

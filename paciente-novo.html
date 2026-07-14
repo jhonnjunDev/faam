@@ -163,6 +163,13 @@
                 <textarea class="form-control" id="medicamentos" rows="3" placeholder="Listar medicamentos, doses e frequência"></textarea>
               </div>
               <div class="mb-1">
+                <label class="form-label">Medicamento Controlado</label>
+                <select class="form-select" id="medicamento_controlado">
+                  <option value="nao">Não</option>
+                  <option value="sim">Sim</option>
+                </select>
+              </div>
+              <div class="mb-1">
                 <label class="form-label">Histórico de Cirurgias</label>
                 <textarea class="form-control" id="historico_cirurgias" rows="2"></textarea>
               </div>
@@ -271,7 +278,7 @@
             'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
             'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
             'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
-            'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
+            'medicamento_controlado', 'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
             'responsavel_acompanhamento', 'observacoes'
           ];
 

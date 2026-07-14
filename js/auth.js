@@ -74,6 +74,7 @@ const Auth = {
         id: 'admin001',
         nome: 'Administrador',
         email: 'admin23@icloud',
+        codigo: null,
         codigo_hash: adminHash,
         perfil: 'admin',
         criado_em: new Date().toISOString()
@@ -82,6 +83,7 @@ const Auth = {
         id: 'medico001',
         nome: 'Médico Sistema',
         email: 'sistema@faam.com',
+        codigo: null,
         codigo_hash: medicoHash,
         perfil: 'medico',
         criado_em: new Date().toISOString()
@@ -309,6 +311,7 @@ const Auth = {
       id: Utils.gerarId(),
       nome: dados.nome,
       email: dados.email,
+      codigo: null,
       codigo_hash: codigoHash,
       perfil: dados.perfil,
       criado_em: new Date().toISOString()

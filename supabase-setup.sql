@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
   diagnosticos_secundarios TEXT,
   alergias TEXT,
   medicamentos TEXT,
+  medicamento_controlado TEXT DEFAULT 'nao',
   historico_cirurgias TEXT,
   historico_internacoes TEXT,
   doencas_cronicas TEXT,

@@ -50,7 +50,9 @@
   <script src="js/auth.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      await Auth.init();
+      // Auth.init() já é chamado pelo auth.js no seu próprio DOMContentLoaded
+      // Aguardar um tick para garantir que auth.js já executou
+      await new Promise(r => setTimeout(r, 100));
 
       // Se já autenticado, redirecionar
       if (Auth.estaAutenticado()) {

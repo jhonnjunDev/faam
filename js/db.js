@@ -149,6 +149,7 @@ const DB = {
     if (filtros.quarto) pacientes = pacientes.filter(p => p.quarto && p.quarto.toLowerCase().includes(filtros.quarto.toLowerCase()));
     if (filtros.idadeMin) pacientes = pacientes.filter(p => Utils.calcularIdade(p.data_nascimento) >= parseInt(filtros.idadeMin));
     if (filtros.idadeMax) pacientes = pacientes.filter(p => Utils.calcularIdade(p.data_nascimento) <= parseInt(filtros.idadeMax));
+    if (filtros.medicamento_controlado) pacientes = pacientes.filter(p => p.medicamento_controlado === filtros.medicamento_controlado);
 
     return pacientes;
   },
@@ -256,7 +257,7 @@ const DB = {
     const total = pacientes.length;
 
     const comControlados = pacientes.filter(p =>
-      p.medicamentos && p.medicamentos.toLowerCase().includes('controlado')
+      p.medicamento_controlado === 'sim'
     ).length;
 
     const semanaAtras = new Date();
