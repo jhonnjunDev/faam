@@ -1,11 +1,11 @@
 -- ========================================
 -- SCRIPT SQL PARA CRIAR AS TABELAS NO SUPABASE
 -- ========================================
--- Execute este script no SQL Editor do Supabase
--- (Dashboard > SQL Editor > New Query)
+-- Copie TODO o conteúdo abaixo e cole no SQL Editor do Supabase
+-- (Dashboard > SQL Editor > New Query > cole aqui > Run)
 -- ========================================
 
--- Tabela de Usuários (usa código hasheado em vez de senha)
+-- Tabela de Usuários
 CREATE TABLE IF NOT EXISTS usuarios (
   id TEXT PRIMARY KEY,
   nome TEXT NOT NULL,
@@ -15,6 +15,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
   perfil TEXT NOT NULL DEFAULT 'assistente_social',
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Adicionar coluna codigo_hash se não existir (para migração)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'codigo_hash') THEN
+    ALTER TABLE usuarios ADD COLUMN codigo_hash TEXT;
+  END IF;
+END $$;
 
 -- Tabela de Pacientes
 CREATE TABLE IF NOT EXISTS pacientes (
@@ -64,61 +72,47 @@ CREATE TABLE IF NOT EXISTS relatorios (
   FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 );
 
--- ========================================
--- HABILITAR RLS (Row Level Security)
--- ========================================
+-- Habilitar RLS
 ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
 
--- ========================================
--- POLÍTICAS DE ACESSO RESTRITIVO
--- ========================================
--- Estas políticas permitem acesso apenas para usuários autenticados
--- usando a anon key do Supabase. Para maior segurança, considere
--- usar Edge Functions para operações sensíveis.
+-- Remover políticas antigas se existirem (para recriar limpo)
+DROP POLICY IF EXISTS "usuarios_select" ON usuarios;
+DROP POLICY IF EXISTS "usuarios_insert" ON usuarios;
+DROP POLICY IF EXISTS "usuarios_update" ON usuarios;
+DROP POLICY IF EXISTS "usuarios_delete" ON usuarios;
+DROP POLICY IF EXISTS "Permitir tudo para usuarios" ON usuarios;
 
--- Usuários: apenas leitura para todos autenticados
-CREATE POLICY "usuarios_select" ON usuarios
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "pacientes_select" ON pacientes;
+DROP POLICY IF EXISTS "pacientes_insert" ON pacientes;
+DROP POLICY IF EXISTS "pacientes_update" ON pacientes;
+DROP POLICY IF EXISTS "pacientes_delete" ON pacientes;
+DROP POLICY IF EXISTS "Permitir tudo para pacientes" ON pacientes;
 
--- Usuários: apenas inserção (cadastro de novos usuários)
-CREATE POLICY "usuarios_insert" ON usuarios
-  FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "relatorios_select" ON relatorios;
+DROP POLICY IF EXISTS "relatorios_insert" ON relatorios;
+DROP POLICY IF EXISTS "relatorios_update" ON relatorios;
+DROP POLICY IF EXISTS "relatorios_delete" ON relatorios;
+DROP POLICY IF EXISTS "Permitir tudo para relatorios" ON relatorios;
 
--- Usuários: apenas atualização pelo próprio usuário
-CREATE POLICY "usuarios_update" ON usuarios
-  FOR UPDATE USING (true);
+-- Criar políticas novas
+CREATE POLICY "usuarios_select" ON usuarios FOR SELECT USING (true);
+CREATE POLICY "usuarios_insert" ON usuarios FOR INSERT WITH CHECK (true);
+CREATE POLICY "usuarios_update" ON usuarios FOR UPDATE USING (true);
+CREATE POLICY "usuarios_delete" ON usuarios FOR DELETE USING (true);
 
--- Pacientes: CRUD para todos autenticados
-CREATE POLICY "pacientes_select" ON pacientes
-  FOR SELECT USING (true);
+CREATE POLICY "pacientes_select" ON pacientes FOR SELECT USING (true);
+CREATE POLICY "pacientes_insert" ON pacientes FOR INSERT WITH CHECK (true);
+CREATE POLICY "pacientes_update" ON pacientes FOR UPDATE USING (true);
+CREATE POLICY "pacientes_delete" ON pacientes FOR DELETE USING (true);
 
-CREATE POLICY "pacientes_insert" ON pacientes
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "relatorios_select" ON relatorios FOR SELECT USING (true);
+CREATE POLICY "relatorios_insert" ON relatorios FOR INSERT WITH CHECK (true);
+CREATE POLICY "relatorios_update" ON relatorios FOR UPDATE USING (true);
+CREATE POLICY "relatorios_delete" ON relatorios FOR DELETE USING (true);
 
-CREATE POLICY "pacientes_update" ON pacientes
-  FOR UPDATE USING (true);
-
-CREATE POLICY "pacientes_delete" ON pacientes
-  FOR DELETE USING (true);
-
--- Relatórios: CRUD para todos autenticados
-CREATE POLICY "relatorios_select" ON relatorios
-  FOR SELECT USING (true);
-
-CREATE POLICY "relatorios_insert" ON relatorios
-  FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "relatorios_update" ON relatorios
-  FOR UPDATE USING (true);
-
-CREATE POLICY "relatorios_delete" ON relatorios
-  FOR DELETE USING (true);
-
--- ========================================
--- ÍNDICES PARA PERFORMANCE
--- ========================================
+-- Índices
 CREATE INDEX IF NOT EXISTS idx_pacientes_nome ON pacientes(nome);
 CREATE INDEX IF NOT EXISTS idx_pacientes_cpf ON pacientes(cpf);
 CREATE INDEX IF NOT EXISTS idx_pacientes_status ON pacientes(status);
@@ -126,9 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_relatorios_paciente_id ON relatorios(paciente_id)
 CREATE INDEX IF NOT EXISTS idx_relatorios_tipo ON relatorios(tipo);
 CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
 
--- ========================================
--- TRIGGER PARA ATUALIZAR updated_at
--- ========================================
+-- Trigger para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -137,6 +129,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_pacientes_modtime ON pacientes;
 CREATE TRIGGER update_pacientes_modtime
   BEFORE UPDATE ON pacientes
   FOR EACH ROW
