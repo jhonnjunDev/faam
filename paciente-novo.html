@@ -228,74 +228,75 @@
         }
 
         // Máscara CPF
-      document.getElementById('cpf').addEventListener('input', (e) => {
-        let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-        v = v.replace(/(\d{3})(\d)/, '$1.$2');
-        v = v.replace(/(\d{3})(\d)/, '$1.$2');
-        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-        e.target.value = v;
-      });
-
-      // Máscara telefone
-      ['telefone', 'contato_telefone'].forEach(id => {
-        document.getElementById(id).addEventListener('input', (e) => {
+        document.getElementById('cpf').addEventListener('input', (e) => {
           let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-          if (v.length === 11) {
-            v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-          } else if (v.length === 10) {
-            v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-          }
+          v = v.replace(/(\d{3})(\d)/, '$1.$2');
+          v = v.replace(/(\d{3})(\d)/, '$1.$2');
+          v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
           e.target.value = v;
         });
-      });
 
-      // Máscara CEP
-      document.getElementById('endereco_cep').addEventListener('input', (e) => {
-        let v = e.target.value.replace(/\D/g, '').substring(0, 8);
-        v = v.replace(/(\d{5})(\d)/, '$1-$2');
-        e.target.value = v;
-      });
-
-      let salvando = false;
-      document.getElementById('formPaciente').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (salvando) return;
-        salvando = true;
-        document.getElementById('btnSalvar').disabled = true;
-
-        const dados = {};
-        const campos = [
-          'nome', 'cpf', 'data_nascimento', 'sexo', 'estado_civil', 'naturalidade',
-          'telefone', 'email', 'endereco_rua', 'endereco_bairro', 'endereco_cidade',
-          'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
-          'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
-          'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
-          'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
-          'responsavel_acompanhamento', 'observacoes'
-        ];
-
-        campos.forEach(campo => {
-          dados[campo] = document.getElementById(campo).value.trim();
+        // Máscara telefone
+        ['telefone', 'contato_telefone'].forEach(id => {
+          document.getElementById(id).addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '').substring(0, 11);
+            if (v.length === 11) {
+              v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (v.length === 10) {
+              v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            }
+            e.target.value = v;
+          });
         });
 
-        if (!dados.nome || !dados.data_nascimento || !dados.sexo || !dados.data_entrada || !dados.diagnostico_principal) {
-          Utils.mostrarToast('Preencha os campos obrigatórios.', 'error');
-          salvando = false;
-          document.getElementById('btnSalvar').disabled = false;
-          return;
-        }
+        // Máscara CEP
+        document.getElementById('endereco_cep').addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '').substring(0, 8);
+          v = v.replace(/(\d{5})(\d)/, '$1-$2');
+          e.target.value = v;
+        });
 
-        const paciente = await DB.cadastrarPaciente(dados);
-        if (!paciente) {
-          salvando = false;
-          document.getElementById('btnSalvar').disabled = false;
-          return;
-        }
-        Utils.mostrarToast('Paciente cadastrado com sucesso!');
-        setTimeout(() => {
-          window.location.href = `paciente-ficha.html?id=${paciente.id}`;
-        }, 800);
-      });
+        let salvando = false;
+        document.getElementById('formPaciente').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (salvando) return;
+          salvando = true;
+          document.getElementById('btnSalvar').disabled = true;
+
+          const dados = {};
+          const campos = [
+            'nome', 'cpf', 'data_nascimento', 'sexo', 'estado_civil', 'naturalidade',
+            'telefone', 'email', 'endereco_rua', 'endereco_bairro', 'endereco_cidade',
+            'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
+            'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
+            'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
+            'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
+            'responsavel_acompanhamento', 'observacoes'
+          ];
+
+          campos.forEach(campo => {
+            dados[campo] = document.getElementById(campo).value.trim();
+          });
+
+          if (!dados.nome || !dados.data_nascimento || !dados.sexo || !dados.data_entrada || !dados.diagnostico_principal) {
+            Utils.mostrarToast('Preencha os campos obrigatórios.', 'error');
+            salvando = false;
+            document.getElementById('btnSalvar').disabled = false;
+            return;
+          }
+
+          const paciente = await DB.cadastrarPaciente(dados);
+          if (!paciente) {
+            salvando = false;
+            document.getElementById('btnSalvar').disabled = false;
+            return;
+          }
+          Utils.mostrarToast('Paciente cadastrado com sucesso!');
+          setTimeout(() => {
+            window.location.href = `paciente-ficha.html?id=${paciente.id}`;
+          }, 800);
+        });
+      }
 
       aguardarPronto();
     });

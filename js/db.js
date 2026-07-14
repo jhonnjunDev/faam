@@ -116,13 +116,15 @@ const DB = {
   async excluirPaciente(id) {
     if (this.modoSupabase) {
       await clientSupabase.from('relatorios').delete().eq('paciente_id', id);
-      await clientSupabase.from('pacientes').delete().eq('id', id);
+      const { error } = await clientSupabase.from('pacientes').delete().eq('id', id);
+      if (error) { console.error(error); return false; }
     } else {
       const pacientes = (await this.obterPacientes()).filter(p => p.id !== id);
       this.salvarPacientes(pacientes);
       const relatorios = (await this.obterRelatorios()).filter(r => r.paciente_id !== id);
       localStorage.setItem(this.CHAVE_RELATORIOS, JSON.stringify(relatorios));
     }
+    return true;
   },
 
   async buscarPacientes(termo, filtros = {}) {
