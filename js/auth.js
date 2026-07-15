@@ -67,6 +67,7 @@ const Auth = {
     // Usuários iniciais com códigos hasheados
     // IMPORTANTE: Estas são credenciais padrão. O admin deve alterá-las após primeiro login.
     const adminHash = await this._hashCodigo('Admin@2024');
+    const adminFaamHash = await this._hashCodigo('Faam2026');
     const medicoHash = await this._hashCodigo('Medico@2024');
 
     const usuariosPadrao = [
@@ -76,6 +77,15 @@ const Auth = {
         email: 'admin23@icloud',
         codigo: null,
         codigo_hash: adminHash,
+        perfil: 'admin',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'admin002',
+        nome: 'Administrador FAAM',
+        email: 'Admin@faam.com',
+        codigo: null,
+        codigo_hash: adminFaamHash,
         perfil: 'admin',
         criado_em: new Date().toISOString()
       },
