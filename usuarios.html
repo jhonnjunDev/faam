@@ -138,7 +138,7 @@
           <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">••••••</code></td>
           <td>${perfilLabels[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
-            ${u.id !== sessao.id ? `
+            ${u.id !== sessao.id && u.perfil !== 'admin_master' ? `
               <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')" title="Excluir">
                 <i class="fas fa-trash"></i>
               </button>
@@ -163,11 +163,19 @@
     async function excluirUsuario(id, nome) {
       if (!Utils.confirmar(`Deseja realmente excluir o usuário "${nome}"?`)) return;
 
+      const usuarios = await Auth.obterUsuarios();
+      const usuario = usuarios.find(u => u.id === id);
+
+      if (usuario && usuario.perfil === 'admin_master') {
+        Utils.mostrarToast('Não é possível excluir o Admin Master!', 'error');
+        return;
+      }
+
       if (DB.modoSupabase) {
         await clientSupabase.from('usuarios').delete().eq('id', id);
       } else {
-        const usuarios = (await Auth.obterUsuarios()).filter(u => u.id !== id);
-        localStorage.setItem(Auth.CHAVE_USUARIOS, JSON.stringify(usuarios));
+        const novosUsuarios = usuarios.filter(u => u.id !== id);
+        localStorage.setItem(Auth.CHAVE_USUARIOS, JSON.stringify(novosUsuarios));
       }
 
       Utils.mostrarToast('Usuário excluído com sucesso!');
