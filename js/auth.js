@@ -149,14 +149,6 @@ const Auth = {
       // Login bem-sucedido, limpar tentativas
       localStorage.removeItem(chaveTentativas);
 
-      // Registrar log de login
-      if (typeof Logs !== 'undefined') {
-        Logs.registrar('login', 'Login realizado', `E-mail: ${email}`, {
-          nome: usuario.nome,
-          perfil: usuario.perfil
-        });
-      }
-
       // Migrar código antigo para hash se necessário
       if (usuario.codigo && !usuario.codigo_hash) {
         await this._migrarCodigo(usuario.id, usuario.codigo);
@@ -311,7 +303,7 @@ const Auth = {
 
     const permissoes = {
       'admin': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
-      'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios', 'logs'],
+      'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'enfermeiro': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
@@ -356,11 +348,6 @@ const Auth = {
     } else {
       usuarios.push(novoUsuario);
       localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
-    }
-
-    // Registrar log de cadastro
-    if (typeof Logs !== 'undefined') {
-      Logs.registrar('usuario', 'Novo usuário cadastrado', `${dados.nome} (${dados.perfil})`);
     }
 
     return { sucesso: true, codigo: dados.codigo };
@@ -418,10 +405,6 @@ const Auth = {
           <div class="nav-section">Sistema</div>
           <a href="usuarios.html" class="${paginaAtual === 'usuarios' ? 'active' : ''}">
             <i class="fas fa-user-cog"></i> Gerenciar Usuários
-          </a>` : ''}
-          ${sessao.perfil === 'admin_master' ? `
-          <a href="logs.html" class="${paginaAtual === 'logs' ? 'active' : ''}">
-            <i class="fas fa-history"></i> Logs do Sistema
           </a>` : ''}
         </nav>
         <div class="sidebar-footer">
