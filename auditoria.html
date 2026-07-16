@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://htfhfutjhlqktbzjbiuc.supabase.co wss://htfhfutjhlqktbzjbiuc.supabase.co; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;">
+  <title>Auditoria - FAAM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="auditoria" data-titulo="Auditoria" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / Auditoria'>
+
+  <div class="app-layout">
+    <main class="main-content">
+      <div class="content-area fade-in">
+        <div class="table-card mb-3">
+          <div class="table-header">
+            <h3><i class="fas fa-clipboard-check"></i> Registro de Atividades</h3>
+            <div style="display:flex; gap:8px;">
+              <select class="form-select" id="filtroModulo" style="width:auto; padding:8px 12px; font-size:13px;">
+                <option value="">Todos os módulos</option>
+                <option value="sistema">Sistema</option>
+                <option value="usuarios">Usuários</option>
+                <option value="pacientes">Pacientes</option>
+                <option value="relatorios">Relatórios</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Usuário</th>
+                  <th>Módulo</th>
+                  <th>Ação</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaAuditoria"></tbody>
+            </table>
+          </div>
+          <div id="estadoVazio" style="display:none; padding:40px; text-align:center; color:var(--text-light);">
+            <i class="fas fa-clipboard-list" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+            <p>Nenhum registro de auditoria</p>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top:24px;">
+          <p style="font-size:12px; color:var(--text-light);">Desenvolvido por <strong>Jhonata</strong></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/auditoria.js"></script>
+  <script>
+    async function carregarAuditoria() {
+      const tbody = document.getElementById('tabelaAuditoria');
+      const estadoVazio = document.getElementById('estadoVazio');
+      const filtroModulo = document.getElementById('filtroModulo').value;
+
+      const registros = await Auditoria.obterRegistros(filtroModulo ? { modulo: filtroModulo } : {});
+
+      if (registros.length === 0) {
+        tbody.innerHTML = '';
+        estadoVazio.style.display = 'block';
+        return;
+      }
+
+      estadoVazio.style.display = 'none';
+
+      const moduloCores = {
+        sistema: { bg: '#ebf8ff', color: '#2b6cb0', icon: 'fa-cog' },
+        usuarios: { bg: '#faf5ff', color: '#6b46c1', icon: 'fa-user-cog' },
+        pacientes: { bg: '#f0fff4', color: '#276749', icon: 'fa-user' },
+        relatorios: { bg: '#fffff0', color: '#975a16', icon: 'fa-file-medical' }
+      };
+
+      tbody.innerHTML = registros.map(r => {
+        const estilo = moduloCores[r.modulo] || moduloCores.sistema;
+        const data = new Date(r.timestamp);
+        const dataFormatada = data.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        return `
+          <tr>
+            <td style="font-size:12px; color:var(--text-light); white-space:nowrap;">${dataFormatada}</td>
+            <td style="font-weight:600; font-size:13px;">${Utils.escapeHtml(r.usuario_nome)}</td>
+            <td>
+              <span class="badge" style="background:${estilo.bg};color:${estilo.color};">
+                <i class="fas ${estilo.icon}"></i> ${r.modulo.charAt(0).toUpperCase() + r.modulo.slice(1)}
+              </span>
+            </td>
+            <td style="font-size:13px;">${Utils.escapeHtml(r.acao)}</td>
+            <td style="font-size:12px; color:var(--text-light); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${Utils.escapeHtml(r.detalhes || '-')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function aguardarPronto() {
+      if (window.AuthPronto) {
+        iniciarPagina();
+      } else {
+        setTimeout(aguardarPronto, 50);
+      }
+    }
+
+    async function iniciarPagina() {
+      if (!Auth.podeAcessar('auditoria')) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      await carregarAuditoria();
+
+      document.getElementById('filtroModulo').addEventListener('change', carregarAuditoria);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { aguardarPronto(); });
+  </script>
+</body>
+</html>

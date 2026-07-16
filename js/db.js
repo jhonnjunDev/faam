@@ -98,6 +98,11 @@ const DB = {
       this.salvarPacientes(pacientes);
     }
 
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Paciente cadastrado', 'pacientes', paciente.nome);
+    }
+
     return paciente;
   },
 
@@ -117,10 +122,18 @@ const DB = {
       this.salvarPacientes(pacientes);
     }
 
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Paciente editado', 'pacientes', dados.nome || id);
+    }
+
     return await this.obterPacientePorId(id);
   },
 
   async excluirPaciente(id) {
+    const paciente = await this.obterPacientePorId(id);
+    const nomePaciente = paciente ? paciente.nome : id;
+
     if (this.modoSupabase) {
       await clientSupabase.from('relatorios').delete().eq('paciente_id', id);
       const { error } = await clientSupabase.from('pacientes').delete().eq('id', id);
@@ -131,6 +144,12 @@ const DB = {
       const relatorios = (await this.obterRelatorios()).filter(r => r.paciente_id !== id);
       localStorage.setItem(this.CHAVE_RELATORIOS, JSON.stringify(relatorios));
     }
+
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Paciente excluído', 'pacientes', nomePaciente);
+    }
+
     return true;
   },
 
@@ -214,15 +233,31 @@ const DB = {
       this.salvarRelatorios(relatorios);
     }
 
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      const pacientes = await this.obterPacientes();
+      const paciente = pacientes.find(p => p.id === relatorio.paciente_id);
+      Auditoria.registrar('Relatório criado', 'relatorios', `${relatorio.tipo} - ${paciente ? paciente.nome : 'Paciente'}`);
+    }
+
     return relatorio;
   },
 
   async excluirRelatorio(id) {
+    const relatorio = await this.obterRelatorioPorId(id);
+
     if (this.modoSupabase) {
       await clientSupabase.from('relatorios').delete().eq('id', id);
     } else {
       const relatorios = (await this.obterRelatorios()).filter(r => r.id !== id);
       this.salvarRelatorios(relatorios);
+    }
+
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      const pacientes = await this.obterPacientes();
+      const paciente = relatorio ? pacientes.find(p => p.id === relatorio.paciente_id) : null;
+      Auditoria.registrar('Relatório excluído', 'relatorios', relatorio ? `${relatorio.tipo} - ${paciente ? paciente.nome : 'Paciente'}` : id);
     }
   },
 

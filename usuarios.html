@@ -29,7 +29,7 @@
                 <tr>
                   <th>Usuário</th>
                   <th>E-mail</th>
-                  <th>Código</th>
+                  <th>Status</th>
                   <th>Perfil</th>
                   <th class="text-right no-print">Ações</th>
                 </tr>
@@ -117,34 +117,47 @@
         cuidador: '<span class="badge" style="background:#fff5f5;color:#d69e2e;">Cuidador</span>'
       };
 
-      tbody.innerHTML = usuarios.map(u => `
-        <tr>
+      const ehAdminMaster = sessao.perfil === 'admin_master';
+
+      tbody.innerHTML = usuarios.map(u => {
+        const bloqueado = u.status === 'bloqueado';
+        const statusBadge = bloqueado
+          ? '<span class="badge" style="background:#fed7d7;color:#c53030;"><i class="fas fa-ban"></i> Bloqueado</span>'
+          : '<span class="badge" style="background:#f0fff4;color:#276749;"><i class="fas fa-check-circle"></i> Ativo</span>';
+
+        return `
+        <tr style="${bloqueado ? 'opacity:0.6;' : ''}">
           <td>
             <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+              <div style="width:36px; height:36px; border-radius:50%; background:${bloqueado ? '#a0aec0' : 'var(--primary)'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
                 ${Utils.obterIniciais(u.nome)}
               </div>
               <div>
                 <div style="font-weight:600; font-size:14px;">
                   ${Utils.escapeHtml(u.nome)}
-                  ${online[u.id] ? '<span class="online-dot" title="Online"></span>' : ''}
+                  ${online[u.id] && !bloqueado ? '<span class="online-dot" title="Online"></span>' : ''}
                 </div>
                 ${u.id === sessao.id ? '<span style="font-size:11px; color:var(--accent);">(Você)</span>' : ''}
               </div>
             </div>
           </td>
           <td>${Utils.escapeHtml(u.email)}</td>
-          <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">••••••</code></td>
+          <td>${statusBadge}</td>
           <td>${perfilLabels[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
             ${u.id !== sessao.id && u.perfil !== 'admin_master' ? `
+              ${ehAdminMaster ? `
+                <button class="btn btn-sm ${bloqueado ? 'btn-success' : 'btn-warning'}" onclick="${bloqueado ? `desbloquearUsuario('${u.id}')` : `bloquearUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')`}" title="${bloqueado ? 'Desbloquear' : 'Bloquear'}">
+                  <i class="fas ${bloqueado ? 'fa-unlock' : 'fa-lock'}"></i>
+                </button>
+              ` : ''}
               <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')" title="Excluir">
                 <i class="fas fa-trash"></i>
               </button>
             ` : '<span class="text-muted" style="font-size:12px;">-</span>'}
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     function abrirModal() {
@@ -178,6 +191,19 @@
       }
 
       Utils.mostrarToast('Usuário excluído com sucesso!');
+      renderizarTabela();
+    }
+
+    async function bloquearUsuario(id, nome) {
+      if (!Utils.confirmar(`Deseja bloquear o acesso de "${nome}"?`)) return;
+      await Auth.bloquearUsuario(id);
+      Utils.mostrarToast('Usuário bloqueado!', 'warning');
+      renderizarTabela();
+    }
+
+    async function desbloquearUsuario(id) {
+      await Auth.desbloquearUsuario(id);
+      Utils.mostrarToast('Usuário desbloqueado!', 'success');
       renderizarTabela();
     }
 

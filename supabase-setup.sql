@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   codigo TEXT,
   codigo_hash TEXT,
   perfil TEXT NOT NULL DEFAULT 'assistente_social',
+  status TEXT DEFAULT 'ativo',
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -21,6 +22,14 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'codigo_hash') THEN
     ALTER TABLE usuarios ADD COLUMN codigo_hash TEXT;
+  END IF;
+END $$;
+
+-- Adicionar coluna status se não existir
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'status') THEN
+    ALTER TABLE usuarios ADD COLUMN status TEXT DEFAULT 'ativo';
   END IF;
 END $$;
 
@@ -73,10 +82,22 @@ CREATE TABLE IF NOT EXISTS relatorios (
   FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 );
 
+-- Tabela de Auditoria
+CREATE TABLE IF NOT EXISTS auditoria (
+  id TEXT PRIMARY KEY,
+  usuario_id TEXT,
+  usuario_nome TEXT,
+  acao TEXT NOT NULL,
+  modulo TEXT NOT NULL,
+  detalhes TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Habilitar RLS
 ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auditoria ENABLE ROW LEVEL SECURITY;
 
 -- Remover políticas antigas se existirem (para recriar limpo)
 DROP POLICY IF EXISTS "usuarios_select" ON usuarios;
@@ -97,6 +118,9 @@ DROP POLICY IF EXISTS "relatorios_update" ON relatorios;
 DROP POLICY IF EXISTS "relatorios_delete" ON relatorios;
 DROP POLICY IF EXISTS "Permitir tudo para relatorios" ON relatorios;
 
+DROP POLICY IF EXISTS "auditoria_select" ON auditoria;
+DROP POLICY IF EXISTS "auditoria_insert" ON auditoria;
+
 -- Criar políticas novas
 CREATE POLICY "usuarios_select" ON usuarios FOR SELECT USING (true);
 CREATE POLICY "usuarios_insert" ON usuarios FOR INSERT WITH CHECK (true);
@@ -113,6 +137,9 @@ CREATE POLICY "relatorios_insert" ON relatorios FOR INSERT WITH CHECK (true);
 CREATE POLICY "relatorios_update" ON relatorios FOR UPDATE USING (true);
 CREATE POLICY "relatorios_delete" ON relatorios FOR DELETE USING (true);
 
+CREATE POLICY "auditoria_select" ON auditoria FOR SELECT USING (true);
+CREATE POLICY "auditoria_insert" ON auditoria FOR INSERT WITH CHECK (true);
+
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_pacientes_nome ON pacientes(nome);
 CREATE INDEX IF NOT EXISTS idx_pacientes_cpf ON pacientes(cpf);
@@ -120,6 +147,8 @@ CREATE INDEX IF NOT EXISTS idx_pacientes_status ON pacientes(status);
 CREATE INDEX IF NOT EXISTS idx_relatorios_paciente_id ON relatorios(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_relatorios_tipo ON relatorios(tipo);
 CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_auditoria_timestamp ON auditoria(timestamp);
+CREATE INDEX IF NOT EXISTS idx_auditoria_usuario_id ON auditoria(usuario_id);
 
 -- Trigger para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_modified_column()

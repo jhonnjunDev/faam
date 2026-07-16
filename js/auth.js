@@ -146,6 +146,11 @@ const Auth = {
     const usuario = usuarios.find(u => u.email === email && (u.codigo_hash === codigoHash || u.codigo === codigo));
 
     if (usuario) {
+      // Verificar se usuário está bloqueado pelo admin
+      if (usuario.status === 'bloqueado') {
+        return { sucesso: false, erro: 'Esta conta foi bloqueada pelo administrador.' };
+      }
+
       // Login bem-sucedido, limpar tentativas
       localStorage.removeItem(chaveTentativas);
 
@@ -166,6 +171,12 @@ const Auth = {
       const token = await this._gerarTokenSessao(sessao);
       sessionStorage.setItem(this.CHAVE_SESSAO, token);
       this.registrarOnline();
+
+      // Registrar auditoria
+      if (typeof Auditoria !== 'undefined') {
+        Auditoria.registrar('Login realizado', 'sistema', `E-mail: ${email}`);
+      }
+
       return { sucesso: true, usuario: sessao };
     }
 
@@ -303,7 +314,7 @@ const Auth = {
 
     const permissoes = {
       'admin': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
-      'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
+      'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios', 'auditoria'],
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'enfermeiro': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
@@ -336,6 +347,7 @@ const Auth = {
       codigo: null,
       codigo_hash: codigoHash,
       perfil: dados.perfil,
+      status: 'ativo',
       criado_em: new Date().toISOString()
     };
 
@@ -350,7 +362,56 @@ const Auth = {
       localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
     }
 
+    // Registrar auditoria
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Usuário cadastrado', 'usuarios', `${dados.nome} (${dados.perfil})`);
+    }
+
     return { sucesso: true, codigo: dados.codigo };
+  },
+
+  async bloquearUsuario(id) {
+    if (DB.modoSupabase) {
+      const { error } = await clientSupabase.from('usuarios').update({ status: 'bloqueado' }).eq('id', id);
+      if (error) return false;
+    } else {
+      const usuarios = await this.obterUsuarios();
+      const idx = usuarios.findIndex(u => u.id === id);
+      if (idx !== -1) {
+        usuarios[idx].status = 'bloqueado';
+        localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
+      }
+    }
+
+    const usuarios = await this.obterUsuarios();
+    const usuario = usuarios.find(u => u.id === id);
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Usuário bloqueado', 'usuarios', usuario ? usuario.nome : id);
+    }
+
+    return true;
+  },
+
+  async desbloquearUsuario(id) {
+    if (DB.modoSupabase) {
+      const { error } = await clientSupabase.from('usuarios').update({ status: 'ativo' }).eq('id', id);
+      if (error) return false;
+    } else {
+      const usuarios = await this.obterUsuarios();
+      const idx = usuarios.findIndex(u => u.id === id);
+      if (idx !== -1) {
+        usuarios[idx].status = 'ativo';
+        localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
+      }
+    }
+
+    const usuarios = await this.obterUsuarios();
+    const usuario = usuarios.find(u => u.id === id);
+    if (typeof Auditoria !== 'undefined') {
+      Auditoria.registrar('Usuário desbloqueado', 'usuarios', usuario ? usuario.nome : id);
+    }
+
+    return true;
   },
 
   gerarCodigo() {
@@ -405,6 +466,10 @@ const Auth = {
           <div class="nav-section">Sistema</div>
           <a href="usuarios.html" class="${paginaAtual === 'usuarios' ? 'active' : ''}">
             <i class="fas fa-user-cog"></i> Gerenciar Usuários
+          </a>` : ''}
+          ${sessao.perfil === 'admin_master' ? `
+          <a href="auditoria.html" class="${paginaAtual === 'auditoria' ? 'active' : ''}">
+            <i class="fas fa-clipboard-check"></i> Auditoria
           </a>` : ''}
         </nav>
         <div class="sidebar-footer">
