@@ -138,7 +138,7 @@
           <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">••••••</code></td>
           <td>${perfilLabels[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
-            ${u.id !== sessao.id && u.perfil !== 'admin_master' ? `
+            ${u.id !== sessao.id ? `
               <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')" title="Excluir">
                 <i class="fas fa-trash"></i>
               </button>
@@ -186,11 +186,6 @@
       if (!Auth.podeAcessar('usuarios')) {
         window.location.href = 'dashboard.html';
         return;
-      }
-
-      const sessao = Auth.obterSessao();
-      if (sessao && sessao.perfil === 'admin_master') {
-        document.getElementById('btnNovoUsuario').style.display = 'none';
       }
 
       renderizarTabela();
