@@ -1,5 +1,5 @@
 /* ========================================
-   Sistema de Logs de Atividades
+   Sistema de Logs de Atividades (Supabase)
    ======================================== */
 
 const Logs = {
@@ -7,7 +7,7 @@ const Logs = {
   MAX_LOGS: 500,
 
   // Registrar uma ação no log
-  registrar(tipo, acao, detalhes = '', usuario = null) {
+  async registrar(tipo, acao, detalhes = '', usuario = null) {
     const sessao = usuario || Auth.obterSessao();
     const log = {
       id: Utils.gerarId(),
@@ -19,25 +19,63 @@ const Logs = {
       timestamp: new Date().toISOString()
     };
 
-    let logs = this.obterLogs();
-    logs.unshift(log);
-
-    // Manter apenas os últimos MAX_LOGS
-    if (logs.length > this.MAX_LOGS) {
-      logs = logs.slice(0, this.MAX_LOGS);
+    if (DB.modoSupabase) {
+      try {
+        const { error } = await clientSupabase.from('logs').insert(log);
+        if (error) console.error('Erro ao salvar log:', error);
+      } catch (e) {
+        console.error('Erro ao salvar log no Supabase:', e);
+      }
+    } else {
+      let logs = this.obterLogs();
+      logs.unshift(log);
+      if (logs.length > this.MAX_LOGS) {
+        logs = logs.slice(0, this.MAX_LOGS);
+      }
+      localStorage.setItem(this.CHAVE_LOGS, JSON.stringify(logs));
     }
-
-    localStorage.setItem(this.CHAVE_LOGS, JSON.stringify(logs));
   },
 
   // Obter todos os logs
-  obterLogs() {
+  async obterLogs() {
+    if (DB.modoSupabase) {
+      try {
+        const { data, error } = await clientSupabase
+          .from('logs')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(this.MAX_LOGS);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error('Erro ao buscar logs:', e);
+        return [];
+      }
+    }
     const dados = localStorage.getItem(this.CHAVE_LOGS);
     return dados ? JSON.parse(dados) : [];
   },
 
   // Obter logs filtrados
-  obterLogsFiltrados(filtroTipo = '') {
+  async obterLogsFiltrados(filtroTipo = '') {
+    if (DB.modoSupabase) {
+      try {
+        let query = clientSupabase
+          .from('logs')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(this.MAX_LOGS);
+        if (filtroTipo) {
+          query = query.eq('tipo', filtroTipo);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error('Erro ao buscar logs filtrados:', e);
+        return [];
+      }
+    }
     let logs = this.obterLogs();
     if (filtroTipo) {
       logs = logs.filter(log => log.tipo === filtroTipo);
@@ -46,19 +84,32 @@ const Logs = {
   },
 
   // Limpar todos os logs
-  limparLogs() {
-    localStorage.removeItem(this.CHAVE_LOGS);
-    this.registrar('sistema', 'Logs limpos por administrador');
+  async limparLogs() {
+    if (DB.modoSupabase) {
+      try {
+        await clientSupabase.from('logs').delete().neq('id', '');
+      } catch (e) {
+        console.error('Erro ao limpar logs:', e);
+      }
+    } else {
+      localStorage.removeItem(this.CHAVE_LOGS);
+    }
+    await this.registrar('sistema', 'Logs limpos por administrador');
+  },
+
+  // Registrar erro do sistema
+  async registrarErro(origem, erro, detalhes = '') {
+    await this.registrar('erro', origem, `${erro}${detalhes ? ' - ' + detalhes : ''}`);
   }
 };
 
 // Funções da página de logs
-function carregarLogs() {
+async function carregarLogs() {
   const tbody = document.getElementById('tabelaLogs');
   const estadoVazio = document.getElementById('estadoVazio');
   const filtroTipo = document.getElementById('filtroTipo').value;
 
-  const logs = Logs.obterLogsFiltrados(filtroTipo);
+  const logs = await Logs.obterLogsFiltrados(filtroTipo);
 
   if (logs.length === 0) {
     tbody.innerHTML = '';
@@ -73,18 +124,19 @@ function carregarLogs() {
     paciente: { bg: '#f0fff4', color: '#276749', icon: 'fa-user' },
     relatorio: { bg: '#fffff0', color: '#975a16', icon: 'fa-file-medical' },
     usuario: { bg: '#faf5ff', color: '#6b46c1', icon: 'fa-user-cog' },
-    sistema: { bg: '#fff5f5', color: '#c53030', icon: 'fa-cog' }
+    sistema: { bg: '#fff5f5', color: '#c53030', icon: 'fa-cog' },
+    erro: { bg: '#fed7d7', color: '#c53030', icon: 'fa-exclamation-triangle' }
   };
 
   tbody.innerHTML = logs.map(log => {
     const estilo = tipoCores[log.tipo] || tipoCores.sistema;
     const data = new Date(log.timestamp);
-    const dataFormatada = data.toLocaleString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
+    const dataFormatada = data.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit' 
+      hour: '2-digit',
+      minute: '2-digit'
     });
 
     return `
@@ -105,10 +157,10 @@ function carregarLogs() {
   }).join('');
 }
 
-function limparLogs() {
+async function limparLogs() {
   if (!Utils.confirmar('Deseja realmente limpar todos os logs?')) return;
-  Logs.limparLogs();
-  carregarLogs();
+  await Logs.limparLogs();
+  await carregarLogs();
   Utils.mostrarToast('Logs limpos com sucesso!');
 }
 
@@ -116,6 +168,8 @@ function limparLogs() {
 document.addEventListener('DOMContentLoaded', () => {
   const filtroTipo = document.getElementById('filtroTipo');
   if (filtroTipo) {
-    filtroTipo.addEventListener('change', carregarLogs);
+    filtroTipo.addEventListener('change', async () => {
+      await carregarLogs();
+    });
   }
 });
