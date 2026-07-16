@@ -16,7 +16,7 @@
         <div class="table-card mb-3">
           <div class="table-header">
             <h3><i class="fas fa-user-cog"></i> Usuários do Sistema</h3>
-            <button class="btn btn-success no-print" onclick="abrirModal()">
+            <button class="btn btn-success no-print" id="btnNovoUsuario" onclick="abrirModal()">
               <i class="fas fa-user-plus"></i> Cadastrar Funcionário
             </button>
           </div>
@@ -84,6 +84,7 @@
             <option value="medico">Médico</option>
             <option value="enfermeiro">Enfermeiro</option>
             <option value="tecnico_enfermagem">Técnico de Enfermagem</option>
+            <option value="cuidador">Cuidador</option>
           </select>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%" id="btnCadastrar">
@@ -99,6 +100,7 @@
   <script src="js/dados-iniciais.js"></script>
   <script src="js/db.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/logs.js"></script>
   <script>
     async function renderizarTabela() {
       const usuarios = await Auth.obterUsuarios();
@@ -108,10 +110,12 @@
 
       const perfilLabels = {
         admin: '<span class="badge" style="background:#faf5ff;color:#6b46c1;">Administrador</span>',
+        admin_master: '<span class="badge" style="background:#1a202c;color:#fff;">Admin Master</span>',
         medico: '<span class="badge" style="background:#ebf8ff;color:#2b6cb0;">Médico</span>',
         enfermeiro: '<span class="badge" style="background:#fff5f5;color:#c53030;">Enfermeiro</span>',
         tecnico_enfermagem: '<span class="badge" style="background:#fffff0;color:#975a16;">Técnico Enfermagem</span>',
-        assistente_social: '<span class="badge" style="background:#f0fff4;color:#276749;">Assist. Social</span>'
+        assistente_social: '<span class="badge" style="background:#f0fff4;color:#276749;">Assist. Social</span>',
+        cuidador: '<span class="badge" style="background:#fff5f5;color:#d69e2e;">Cuidador</span>'
       };
 
       tbody.innerHTML = usuarios.map(u => `
@@ -134,7 +138,7 @@
           <td><code style="background:#f7fafc; padding:4px 8px; border-radius:4px; font-weight:600;">••••••</code></td>
           <td>${perfilLabels[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
-            ${u.id !== sessao.id ? `
+            ${u.id !== sessao.id && u.perfil !== 'admin_master' ? `
               <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${u.id}', '${Utils.escapeHtml(u.nome)}')" title="Excluir">
                 <i class="fas fa-trash"></i>
               </button>
@@ -182,6 +186,11 @@
       if (!Auth.podeAcessar('usuarios')) {
         window.location.href = 'dashboard.html';
         return;
+      }
+
+      const sessao = Auth.obterSessao();
+      if (sessao && sessao.perfil === 'admin_master') {
+        document.getElementById('btnNovoUsuario').style.display = 'none';
       }
 
       renderizarTabela();

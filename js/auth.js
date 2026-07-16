@@ -69,6 +69,7 @@ const Auth = {
     const adminHash = await this._hashCodigo('Admin@2024');
     const adminFaamHash = await this._hashCodigo('Faam2026');
     const medicoHash = await this._hashCodigo('Medico@2024');
+    const adminMasterHash = await this._hashCodigo('@JY2026');
 
     const usuariosPadrao = [
       {
@@ -87,6 +88,15 @@ const Auth = {
         codigo: null,
         codigo_hash: adminFaamHash,
         perfil: 'admin',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'admin_master001',
+        nome: 'Admin Master',
+        email: 'Admin@Jhon.com',
+        codigo: null,
+        codigo_hash: adminMasterHash,
+        perfil: 'admin_master',
         criado_em: new Date().toISOString()
       },
       {
@@ -138,6 +148,14 @@ const Auth = {
     if (usuario) {
       // Login bem-sucedido, limpar tentativas
       localStorage.removeItem(chaveTentativas);
+
+      // Registrar log de login
+      if (typeof Logs !== 'undefined') {
+        Logs.registrar('login', 'Login realizado', `E-mail: ${email}`, {
+          nome: usuario.nome,
+          perfil: usuario.perfil
+        });
+      }
 
       // Migrar código antigo para hash se necessário
       if (usuario.codigo && !usuario.codigo_hash) {
@@ -293,10 +311,12 @@ const Auth = {
 
     const permissoes = {
       'admin': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios'],
+      'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios', 'logs'],
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
-      'enfermeiro': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
+      'enfermeiro': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
-      'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe']
+      'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
+      'cuidador': ['dashboard', 'relatorios', 'relatorio_novo', 'relatorio_detalhe']
     };
 
     return (permissoes[sessao.perfil] || []).includes(recurso);
@@ -338,6 +358,11 @@ const Auth = {
       localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
     }
 
+    // Registrar log de cadastro
+    if (typeof Logs !== 'undefined') {
+      Logs.registrar('usuario', 'Novo usuário cadastrado', `${dados.nome} (${dados.perfil})`);
+    }
+
     return { sucesso: true, codigo: dados.codigo };
   },
 
@@ -355,7 +380,7 @@ const Auth = {
     if (!sessao) return;
 
     const iniciais = Utils.obterIniciais(sessao.nome);
-    const perfilLabel = { admin: 'Administrador', medico: 'Médico', enfermeiro: 'Enfermeiro', tecnico_enfermagem: 'Técnico Enfermagem', assistente_social: 'Assist. Social' };
+    const perfilLabel = { admin: 'Administrador', admin_master: 'Admin Master', medico: 'Médico', enfermeiro: 'Enfermeiro', tecnico_enfermagem: 'Técnico Enfermagem', assistente_social: 'Assist. Social', cuidador: 'Cuidador' };
 
     return `
       <aside class="sidebar" id="sidebar">
@@ -369,6 +394,7 @@ const Auth = {
             <i class="fas fa-th-large"></i> Dashboard
           </a>
 
+          ${sessao.perfil !== 'cuidador' ? `
           <div class="nav-section">Pacientes</div>
           <a href="pacientes.html" class="${paginaAtual === 'pacientes' ? 'active' : ''}">
             <i class="fas fa-users"></i> Listar Pacientes
@@ -377,6 +403,7 @@ const Auth = {
           <a href="paciente-novo.html" class="${paginaAtual === 'paciente-novo' ? 'active' : ''}">
             <i class="fas fa-user-plus"></i> Novo Paciente
           </a>` : ''}
+          ` : ''}
 
           <div class="nav-section">Relatórios</div>
           <a href="relatorios.html" class="${paginaAtual === 'relatorios' ? 'active' : ''}">
@@ -387,10 +414,14 @@ const Auth = {
             <i class="fas fa-plus-circle"></i> Novo Relatório
           </a>` : ''}
 
-          ${sessao.perfil === 'admin' ? `
+          ${sessao.perfil === 'admin' || sessao.perfil === 'admin_master' ? `
           <div class="nav-section">Sistema</div>
           <a href="usuarios.html" class="${paginaAtual === 'usuarios' ? 'active' : ''}">
             <i class="fas fa-user-cog"></i> Gerenciar Usuários
+          </a>` : ''}
+          ${sessao.perfil === 'admin_master' ? `
+          <a href="logs.html" class="${paginaAtual === 'logs' ? 'active' : ''}">
+            <i class="fas fa-history"></i> Logs do Sistema
           </a>` : ''}
         </nav>
         <div class="sidebar-footer">

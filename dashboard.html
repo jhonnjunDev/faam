@@ -27,6 +27,7 @@
   <script src="js/dados-iniciais.js"></script>
   <script src="js/db.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/logs.js"></script>
   <script>
     function carregarDashboard() {
       const container = document.getElementById('conteudo');
@@ -67,7 +68,7 @@
           ? `<a href="usuarios.html" class="btn btn-warning" style="background:#d69e2e; color:#fff;"><i class="fas fa-user-cog"></i> Gerenciar Usuários</a>`
           : '';
 
-        const podeCadastrar = sessao.perfil !== 'assistente_social';
+        const podeCadastrar = sessao.perfil !== 'assistente_social' && sessao.perfil !== 'cuidador';
 
         container.innerHTML = `
           <div style="background:linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color:#fff; border-radius:12px; padding:24px 32px; margin-bottom:24px;">
@@ -75,6 +76,7 @@
             <p style="opacity:0.85; font-size:14px;">
               ${sessao.perfil === 'admin' ? 'Painel Administrativo - Acesso total ao sistema' :
                 sessao.perfil === 'medico' ? 'Painel Médico - Cadastro e relatórios' :
+                sessao.perfil === 'cuidador' ? 'Painel do Cuidador - Relatórios' :
                 'Painel do Assistente Social - Visualização de pacientes'}
             </p>
           </div>
