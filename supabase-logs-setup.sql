@@ -5,6 +5,12 @@
 -- (Dashboard > SQL Editor > New Query > cole aqui > Run)
 -- ========================================
 
+-- Remover se existir (para recriar limpo)
+DROP POLICY IF EXISTS "logs_select" ON logs;
+DROP POLICY IF EXISTS "logs_insert" ON logs;
+DROP POLICY IF EXISTS "logs_delete" ON logs;
+DROP TABLE IF EXISTS logs;
+
 -- Tabela de Logs
 CREATE TABLE IF NOT EXISTS logs (
   id TEXT PRIMARY KEY,

@@ -73,10 +73,22 @@ CREATE TABLE IF NOT EXISTS relatorios (
   FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 );
 
+-- Tabela de Logs
+CREATE TABLE IF NOT EXISTS logs (
+  id TEXT PRIMARY KEY,
+  tipo TEXT NOT NULL,
+  acao TEXT NOT NULL,
+  detalhes TEXT,
+  usuario_nome TEXT,
+  usuario_perfil TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Habilitar RLS
 ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
 
 -- Remover políticas antigas se existirem (para recriar limpo)
 DROP POLICY IF EXISTS "usuarios_select" ON usuarios;
@@ -97,6 +109,10 @@ DROP POLICY IF EXISTS "relatorios_update" ON relatorios;
 DROP POLICY IF EXISTS "relatorios_delete" ON relatorios;
 DROP POLICY IF EXISTS "Permitir tudo para relatorios" ON relatorios;
 
+DROP POLICY IF EXISTS "logs_select" ON logs;
+DROP POLICY IF EXISTS "logs_insert" ON logs;
+DROP POLICY IF EXISTS "logs_delete" ON logs;
+
 -- Criar políticas novas
 CREATE POLICY "usuarios_select" ON usuarios FOR SELECT USING (true);
 CREATE POLICY "usuarios_insert" ON usuarios FOR INSERT WITH CHECK (true);
@@ -112,6 +128,10 @@ CREATE POLICY "relatorios_select" ON relatorios FOR SELECT USING (true);
 CREATE POLICY "relatorios_insert" ON relatorios FOR INSERT WITH CHECK (true);
 CREATE POLICY "relatorios_update" ON relatorios FOR UPDATE USING (true);
 CREATE POLICY "relatorios_delete" ON relatorios FOR DELETE USING (true);
+
+CREATE POLICY "logs_select" ON logs FOR SELECT USING (true);
+CREATE POLICY "logs_insert" ON logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "logs_delete" ON logs FOR DELETE USING (true);
 
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_pacientes_nome ON pacientes(nome);
