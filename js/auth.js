@@ -317,7 +317,7 @@ const Auth = {
       'admin_master': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe', 'usuarios', 'auditoria'],
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'enfermeiro': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
-      'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
+      'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
       'cuidador': ['dashboard', 'relatorios', 'relatorio_novo', 'relatorio_detalhe']
     };
@@ -457,7 +457,7 @@ const Auth = {
           <a href="relatorios.html" class="${paginaAtual === 'relatorios' ? 'active' : ''}">
             <i class="fas fa-file-medical"></i> Relatórios
           </a>
-          ${sessao.perfil !== 'assistente_social' && sessao.perfil !== 'tecnico_enfermagem' ? `
+          ${sessao.perfil !== 'assistente_social' ? `
           <a href="relatorio-novo.html" class="${paginaAtual === 'relatorio-novo' ? 'active' : ''}">
             <i class="fas fa-plus-circle"></i> Novo Relatório
           </a>` : ''}
