@@ -139,16 +139,15 @@
 
             <div class="form-card mb-3">
               <h3><i class="fas fa-paperclip"></i> Documentos / Anexos</h3>
-              <div id="areaUpload" style="border:2px dashed var(--border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div id="listaAnexos"><p style="color:var(--text-light); font-size:13px;">Carregando...</p></div>
+              <div style="margin-top:12px;">
                 <input type="file" id="inputArquivo" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="display:none;">
-                <div id="uploadPlaceholder" onclick="document.getElementById('inputArquivo').click()">
-                  <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--accent); margin-bottom:12px;"></i>
-                  <p style="font-weight:600; margin-bottom:4px;">Arraste arquivos ou clique para anexar</p>
-                  <p style="font-size:12px; color:var(--text-light);">PDF, JPG, PNG, WebP ou DOC/DOCX — Máximo 10MB</p>
-                </div>
-                <div id="arquivoPreview" style="display:none;"></div>
+                <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('inputArquivo').click()">
+                  <i class="fas fa-paperclip"></i> Anexar arquivo
+                </button>
               </div>
-              <div id="barraProgresso" style="display:none; margin-top:16px;">
+              <div id="arquivosPendentes" style="margin-top:12px;"></div>
+              <div id="barraProgresso" style="display:none; margin-top:12px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                   <span id="textoUpload" style="font-size:13px;">Enviando...</span>
                   <span id="porcentUpload" style="font-size:13px; font-weight:600;">0%</span>
@@ -157,12 +156,11 @@
                   <div id="barraAnimacao" style="background:var(--accent); height:100%; width:0%; border-radius:8px; transition:width 0.3s;"></div>
                 </div>
               </div>
-              <div id="listaAnexos" style="margin-top:16px;"></div>
             </div>
 
             <div style="display:flex; gap:12px; justify-content:flex-end;">
               <a href="paciente-ficha.html?id=${p.id}" class="btn btn-outline"><i class="fas fa-times"></i> Cancelar</a>
-              <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Alterações</button>
+              <button type="submit" class="btn btn-primary" id="btnSalvar"><i class="fas fa-save"></i> Salvar Alterações</button>
             </div>
           </form>
         `;
@@ -191,6 +189,112 @@
           e.target.value = v;
         });
 
+        // === ANEXOS ===
+        const icones = { 'application/pdf': 'fa-file-pdf', 'image/jpeg': 'fa-file-image', 'image/png': 'fa-file-image', 'image/webp': 'fa-file-image' };
+        let arquivosPendentes = [];
+
+        document.getElementById('inputArquivo').addEventListener('change', function() {
+          const novos = Array.from(this.files);
+          if (!novos.length) return;
+          arquivosPendentes = arquivosPendentes.concat(novos);
+          this.value = '';
+          renderizarPendentes();
+        });
+
+        function renderizarPendentes() {
+          const el = document.getElementById('arquivosPendentes');
+          if (!arquivosPendentes.length) { el.innerHTML = ''; return; }
+          el.innerHTML = `
+            <p style="font-size:12px; color:var(--text-light); margin-bottom:8px;">Arquivos a enviar (serão enviados ao salvar):</p>
+            ${arquivosPendentes.map((a, idx) => {
+              const icone = icones[a.type] || 'fa-file';
+              return `<div style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; margin-bottom:4px;">
+                <i class="fas ${icone}" style="color:var(--accent);"></i>
+                <span style="font-size:13px; font-weight:600;">${Utils.escapeHtml(a.name)}</span>
+                <span style="font-size:11px; color:var(--text-light);">(${R2.formatarTamanho(a.size)})</span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removerPendente(${idx})" style="margin-left:auto; padding:2px 8px;"><i class="fas fa-times"></i></button>
+              </div>`;
+            }).join('')}
+          `;
+        }
+
+        window.removerPendente = function(idx) {
+          arquivosPendentes.splice(idx, 1);
+          renderizarPendentes();
+        };
+
+        async function uploadArquivosPendentes() {
+          if (!arquivosPendentes.length) return;
+          const barra = document.getElementById('barraProgresso');
+          const texto = document.getElementById('textoUpload');
+          const pct = document.getElementById('porcentUpload');
+          const animacao = document.getElementById('barraAnimacao');
+          barra.style.display = 'block';
+
+          for (let i = 0; i < arquivosPendentes.length; i++) {
+            const arquivo = arquivosPendentes[i];
+            texto.textContent = `Enviando ${arquivo.name}...`;
+            pct.textContent = `${Math.round(((i + 1) / arquivosPendentes.length) * 100)}%`;
+            animacao.style.width = `${((i + 1) / arquivosPendentes.length) * 100}%`;
+            try {
+              R2.validarArquivo(arquivo);
+              await R2.upload(id, arquivo);
+              Auditoria.registrar('Documento anexado', 'pacientes', `${arquivo.name} ao paciente`);
+            } catch (err) {
+              Utils.mostrarToast(`Erro ao enviar ${arquivo.name}: ${err.message}`, 'error');
+            }
+          }
+          texto.textContent = 'Arquivos enviados!';
+          await new Promise(r => setTimeout(r, 800));
+          barra.style.display = 'none';
+          animacao.style.width = '0%';
+          arquivosPendentes = [];
+        }
+
+        window.removerAnexo = async function(key, nome) {
+          if (!Utils.confirmar(`Remover o documento "${nome}"?`)) return;
+          try {
+            await fetch(`https://faam-upload.jhonjunn.workers.dev/delete?key=${key}`, { method: 'DELETE' });
+            Auditoria.registrar('Documento removido', 'pacientes', nome);
+            Utils.mostrarToast('Documento removido!');
+            carregarAnexos();
+          } catch (err) {
+            Utils.mostrarToast(`Erro ao remover: ${err.message}`, 'error');
+          }
+        };
+
+        async function carregarAnexos() {
+          const container = document.getElementById('listaAnexos');
+          try {
+            const resp = await fetch(`https://faam-upload.jhonjunn.workers.dev/list?paciente_id=${id}`);
+            const arquivos = await resp.json();
+            if (!arquivos.length) {
+              container.innerHTML = '<p style="color:var(--text-light); font-size:13px;">Nenhum documento anexado.</p>';
+              return;
+            }
+            container.innerHTML = arquivos.map(a => `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                  <i class="fas ${icones[a.tipo] || 'fa-file'}" style="font-size:20px; color:var(--accent);"></i>
+                  <div style="min-width:0;">
+                    <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${Utils.escapeHtml(a.nome)}</div>
+                    <div style="font-size:11px; color:var(--text-light);">${R2.formatarTamanho(a.tamanho)} &middot; ${a.criado_em ? new Date(a.criado_em).toLocaleDateString('pt-BR') : '-'}</div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-shrink:0;">
+                  <a href="https://faam-upload.jhonjunn.workers.dev/file/${a.key}" target="_blank" class="btn btn-sm btn-outline" title="Abrir"><i class="fas fa-external-link-alt"></i></a>
+                  <button type="button" class="btn btn-sm btn-danger" onclick="removerAnexo('${a.key}', '${Utils.escapeHtml(a.nome)}')" title="Remover"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+            `).join('');
+          } catch (err) {
+            container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
+          }
+        }
+
+        carregarAnexos();
+
+        // === FORM SUBMIT: salvar tudo junto ===
         document.getElementById('formEditar').addEventListener('submit', async (e) => {
           e.preventDefault();
           const dados = {};
@@ -210,147 +314,17 @@
             return;
           }
 
+          const btn = document.getElementById('btnSalvar');
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+          // 1) Upload dos arquivos pendentes
+          await uploadArquivosPendentes();
+
+          // 2) Salvar dados do paciente
           await DB.editarPaciente(id, dados);
           Utils.mostrarToast('Paciente atualizado com sucesso!');
           setTimeout(() => { window.location.href = `paciente-ficha.html?id=${id}`; }, 800);
-        });
-
-        // === ANEXOS / UPLOAD ===
-        const icones = { 'application/pdf': 'fa-file-pdf', 'image/jpeg': 'fa-file-image', 'image/png': 'fa-file-image', 'image/webp': 'fa-file-image' };
-
-        document.getElementById('inputArquivo').addEventListener('change', function() {
-          const arquivos = this.files;
-          if (!arquivos.length) return;
-
-          const iconesSelecionados = Array.from(arquivos).map(a => {
-            const icone = icones[a.type] || 'fa-file';
-            return `<div style="display:flex; align-items:center; gap:8px; padding:6px 0;">
-              <i class="fas ${icone}" style="font-size:16px; color:var(--accent);"></i>
-              <span style="font-size:13px; font-weight:600;">${Utils.escapeHtml(a.name)}</span>
-              <span style="font-size:11px; color:var(--text-light);">(${R2.formatarTamanho(a.size)})</span>
-            </div>`;
-          }).join('');
-
-          document.getElementById('uploadPlaceholder').style.display = 'none';
-          document.getElementById('arquivoPreview').style.display = 'block';
-          document.getElementById('arquivoPreview').innerHTML = `
-            <div style="text-align:left;">${iconesSelecionados}</div>
-            <div style="display:flex; gap:8px; justify-content:center; margin-top:16px;">
-              <button type="button" class="btn btn-sm btn-outline" onclick="cancelarUpload()">
-                <i class="fas fa-times"></i> Cancelar
-              </button>
-              <button type="button" class="btn btn-sm btn-success" onclick="salvarArquivo()">
-                <i class="fas fa-save"></i> Salvar
-              </button>
-            </div>
-          `;
-        });
-
-        window.cancelarUpload = function() {
-          document.getElementById('inputArquivo').value = '';
-          document.getElementById('uploadPlaceholder').style.display = '';
-          document.getElementById('arquivoPreview').style.display = 'none';
-        };
-
-        window.salvarArquivo = async function() {
-          const input = document.getElementById('inputArquivo');
-          const arquivos = input.files;
-          if (!arquivos.length) return;
-
-          const barra = document.getElementById('barraProgresso');
-          const texto = document.getElementById('textoUpload');
-          const pct = document.getElementById('porcentUpload');
-          const animacao = document.getElementById('barraAnimacao');
-
-          cancelarUpload();
-          barra.style.display = 'block';
-
-          for (let i = 0; i < arquivos.length; i++) {
-            const arquivo = arquivos[i];
-            texto.textContent = `Enviando ${arquivo.name}...`;
-            pct.textContent = `${Math.round(((i + 1) / arquivos.length) * 100)}%`;
-            animacao.style.width = `${((i + 1) / arquivos.length) * 100}%`;
-
-            try {
-              R2.validarArquivo(arquivo);
-              console.log('[FAAM] Upload iniciado:', arquivo.name, arquivo.type, arquivo.size);
-              const resultado = await R2.upload(id, arquivo);
-              console.log('[FAAM] Upload concluído:', resultado);
-              Auditoria.registrar('Documento anexado', 'pacientes', `${arquivo.name} ao paciente`);
-            } catch (err) {
-              console.error('[FAAM] Erro no upload:', err);
-              Utils.mostrarToast(`Erro: ${err.message}`, 'error');
-            }
-          }
-
-          texto.textContent = 'Concluído!';
-          setTimeout(() => { barra.style.display = 'none'; animacao.style.width = '0%'; }, 1500);
-          input.value = '';
-
-          // Espera 1s antes de recarregar a lista (R2 pode ter delay)
-          setTimeout(() => carregarAnexos(), 1000);
-        };
-
-        window.removerAnexo = async function(key, nome) {
-          if (!Utils.confirmar(`Remover o documento "${nome}"?`)) return;
-          try {
-            await fetch(`https://faam-upload.jhonjunn.workers.dev/delete?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
-            Auditoria.registrar('Documento removido', 'pacientes', nome);
-            Utils.mostrarToast('Documento removido!');
-            carregarAnexos();
-          } catch (err) {
-            Utils.mostrarToast(`Erro ao remover: ${err.message}`, 'error');
-          }
-        };
-
-        async function carregarAnexos() {
-          const container = document.getElementById('listaAnexos');
-          try {
-            const resp = await fetch(`https://faam-upload.jhonjunn.workers.dev/list?paciente_id=${id}`);
-            const arquivos = await resp.json();
-
-            if (!arquivos.length) {
-              container.innerHTML = '<p style="color:var(--text-light); font-size:13px;">Nenhum documento anexado.</p>';
-              return;
-            }
-
-            container.innerHTML = arquivos.map(a => `
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
-                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-                  <i class="fas ${icones[a.tipo] || 'fa-file'}" style="font-size:20px; color:var(--accent);"></i>
-                  <div style="min-width:0;">
-                    <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${Utils.escapeHtml(a.nome)}</div>
-                    <div style="font-size:11px; color:var(--text-light);">${R2.formatarTamanho(a.tamanho)} &middot; ${a.criado_em ? new Date(a.criado_em).toLocaleDateString('pt-BR') : '-'}</div>
-                  </div>
-                </div>
-                <div style="display:flex; gap:6px; flex-shrink:0;">
-                  <a href="https://faam-upload.jhonjunn.workers.dev/file/${a.key}" target="_blank" class="btn btn-sm btn-outline" title="Abrir">
-                    <i class="fas fa-external-link-alt"></i>
-                  </a>
-                  <button type="button" class="btn btn-sm btn-danger" onclick="removerAnexo('${a.key}', '${Utils.escapeHtml(a.nome)}')" title="Remover">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-            `).join('');
-          } catch (err) {
-            container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
-          }
-        }
-
-        carregarAnexos();
-
-        // Arrastar e soltar
-        const areaUpload = document.getElementById('areaUpload');
-        areaUpload.addEventListener('dragover', (e) => { e.preventDefault(); areaUpload.style.borderColor = 'var(--accent)'; areaUpload.style.background = '#f7fafc'; });
-        areaUpload.addEventListener('dragleave', () => { areaUpload.style.borderColor = 'var(--border)'; areaUpload.style.background = ''; });
-        areaUpload.addEventListener('drop', (e) => {
-          e.preventDefault();
-          areaUpload.style.borderColor = 'var(--border)';
-          areaUpload.style.background = '';
-          const input = document.getElementById('inputArquivo');
-          input.files = e.dataTransfer.files;
-          input.dispatchEvent(new Event('change'));
         });
 
       } catch (err) {
