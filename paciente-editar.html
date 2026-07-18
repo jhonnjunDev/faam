@@ -273,9 +273,12 @@
 
             try {
               R2.validarArquivo(arquivo);
-              await R2.upload(id, arquivo);
+              console.log('[FAAM] Upload iniciado:', arquivo.name, arquivo.type, arquivo.size);
+              const resultado = await R2.upload(id, arquivo);
+              console.log('[FAAM] Upload concluído:', resultado);
               Auditoria.registrar('Documento anexado', 'pacientes', `${arquivo.name} ao paciente`);
             } catch (err) {
+              console.error('[FAAM] Erro no upload:', err);
               Utils.mostrarToast(`Erro: ${err.message}`, 'error');
             }
           }
@@ -283,7 +286,9 @@
           texto.textContent = 'Concluído!';
           setTimeout(() => { barra.style.display = 'none'; animacao.style.width = '0%'; }, 1500);
           input.value = '';
-          carregarAnexos();
+
+          // Espera 1s antes de recarregar a lista (R2 pode ter delay)
+          setTimeout(() => carregarAnexos(), 1000);
         };
 
         window.removerAnexo = async function(key, nome) {
