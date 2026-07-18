@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://htfhfutjhlqktbzjbiuc.supabase.co wss://htfhfutjhlqktbzjbiuc.supabase.co; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://htfhfutjhlqktbzjbiuc.supabase.co wss://htfhfutjhlqktbzjbiuc.supabase.co https://faam-upload.jhonjunn.workers.dev; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://faam-upload.jhonjunn.workers.dev; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://htfhfutjhlqktbzjbiuc.supabase.co https://faam-upload.jhonjunn.workers.dev;">
   <title>Ficha do Paciente - FAAM</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
@@ -27,6 +27,7 @@
   <script src="js/dados-iniciais.js"></script>
   <script src="js/db.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/r2-upload.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       function aguardarPronto() {
@@ -226,6 +227,31 @@
           </div>
         </div>
 
+        <!-- Documentos / Anexos -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-paperclip"></i> Documentos / Anexos</div>
+          <div class="section-body">
+            <div id="areaUpload" style="border:2px dashed var(--border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              <input type="file" id="inputArquivo" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" style="display:none;" onchange="handleUpload(this)">
+              <div onclick="document.getElementById('inputArquivo').click()">
+                <i class="fas fa-cloud-upload-alt" style="font-size:36px; color:var(--accent); margin-bottom:12px;"></i>
+                <p style="font-weight:600; margin-bottom:4px;">Arraste arquivos ou clique para anexar</p>
+                <p style="font-size:12px; color:var(--text-light);">PDF, JPG, PNG, WebP ou DOC/DOCX — Máximo 10MB</p>
+              </div>
+            </div>
+            <div id="barraProgresso" style="display:none; margin-top:16px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span id="textoUpload" style="font-size:13px;">Enviando...</span>
+                <span id="porcentUpload" style="font-size:13px; font-weight:600;">0%</span>
+              </div>
+              <div style="background:#edf2f7; border-radius:8px; height:8px; overflow:hidden;">
+                <div id="barraAnimacao" style="background:var(--accent); height:100%; width:0%; border-radius:8px; transition:width 0.3s;"></div>
+              </div>
+            </div>
+            <div id="listaAnexos" style="margin-top:16px;"></div>
+          </div>
+        </div>
+
         <!-- Botões -->
         <div class="no-print" style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
           <a href="pacientes.html" class="btn btn-outline">
@@ -236,6 +262,105 @@
       }
 
       aguardarPronto();
+
+      // === ANEXOS / UPLOAD ===
+      const pacienteId = Utils.obterParametroUrl('id');
+
+      window.handleUpload = async function(input) {
+        const arquivos = input.files;
+        if (!arquivos.length) return;
+
+        const barra = document.getElementById('barraProgresso');
+        const texto = document.getElementById('textoUpload');
+        const pct = document.getElementById('porcentUpload');
+        const animacao = document.getElementById('barraAnimacao');
+
+        barra.style.display = 'block';
+
+        for (let i = 0; i < arquivos.length; i++) {
+          const arquivo = arquivos[i];
+          texto.textContent = `Enviando ${arquivo.name}...`;
+          pct.textContent = `${Math.round(((i + 1) / arquivos.length) * 100)}%`;
+          animacao.style.width = `${((i + 1) / arquivos.length) * 100}%`;
+
+          try {
+            R2.validarArquivo(arquivo);
+            await R2.upload(pacienteId, arquivo);
+            Auditoria.registrar('Documento anexado', 'pacientes', `${arquivo.name} ao paciente`);
+          } catch (err) {
+            Utils.mostrarToast(`Erro: ${err.message}`, 'error');
+          }
+        }
+
+        texto.textContent = 'Concluído!';
+        setTimeout(() => { barra.style.display = 'none'; animacao.style.width = '0%'; }, 1500);
+        input.value = '';
+        carregarAnexos();
+      };
+
+      window.removerAnexo = async function(key, nome) {
+        if (!Utils.confirmar(`Remover o documento "${nome}"?`)) return;
+        try {
+          await fetch(`https://faam-upload.jhonjunn.workers.dev/delete?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+          Auditoria.registrar('Documento removido', 'pacientes', nome);
+          Utils.mostrarToast('Documento removido!');
+          carregarAnexos();
+        } catch (err) {
+          Utils.mostrarToast(`Erro ao remover: ${err.message}`, 'error');
+        }
+      };
+
+      async function carregarAnexos() {
+        const container = document.getElementById('listaAnexos');
+        try {
+          const resp = await fetch(`https://faam-upload.jhonjunn.workers.dev/list?paciente_id=${pacienteId}`);
+          const arquivos = await resp.json();
+
+          if (!arquivos.length) {
+            container.innerHTML = '<p style="color:var(--text-light); font-size:13px;">Nenhum documento anexado.</p>';
+            return;
+          }
+
+          const icones = { 'application/pdf': 'fa-file-pdf', 'image/jpeg': 'fa-file-image', 'image/png': 'fa-file-image', 'image/webp': 'fa-file-image' };
+
+          container.innerHTML = arquivos.map(a => `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                <i class="fas ${icones[a.tipo] || 'fa-file'}" style="font-size:20px; color:var(--accent);"></i>
+                <div style="min-width:0;">
+                  <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${Utils.escapeHtml(a.nome)}</div>
+                  <div style="font-size:11px; color:var(--text-light);">${R2.formatarTamanho(a.tamanho)} &middot; ${Utils.formatarData(a.criado_em)}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px; flex-shrink:0;">
+                <a href="https://faam-upload.jhonjunn.workers.dev/file/${encodeURIComponent(a.key)}" target="_blank" class="btn btn-sm btn-outline" title="Abrir">
+                  <i class="fas fa-external-link-alt"></i>
+                </a>
+                <button class="btn btn-sm btn-danger" onclick="removerAnexo('${a.key}', '${Utils.escapeHtml(a.nome)}')" title="Remover">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `).join('');
+        } catch (err) {
+          container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
+        }
+      }
+
+      carregarAnexos();
+
+      // Arrastar e soltar
+      const areaUpload = document.getElementById('areaUpload');
+      areaUpload.addEventListener('dragover', (e) => { e.preventDefault(); areaUpload.style.borderColor = 'var(--accent)'; areaUpload.style.background = '#f7fafc'; });
+      areaUpload.addEventListener('dragleave', () => { areaUpload.style.borderColor = 'var(--border)'; areaUpload.style.background = ''; });
+      areaUpload.addEventListener('drop', (e) => {
+        e.preventDefault();
+        areaUpload.style.borderColor = 'var(--border)';
+        areaUpload.style.background = '';
+        const input = document.getElementById('inputArquivo');
+        input.files = e.dataTransfer.files;
+        handleUpload(input);
+      });
 
       // Função para excluir paciente (admin apenas)
       window.excluirPaciente = async function(id, nome) {

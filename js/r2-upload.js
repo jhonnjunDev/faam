@@ -3,7 +3,7 @@
 // Habilitar "S3 API" no bucket para funcionar via navegador
 
 const R2_CONFIG = {
-  accountId: '', // Seu Account ID (dash.cloudflare.com → Meu Perfil → API Tokens → Account ID)
+  accountId: '269f3bad584cd7e4ac3f5b4318b0a04a',
   bucketName: 'faam-documentos', // Nome do bucket no R2
   publicAccess: false, // Não usar acesso público - usar URLs assinados ou Worker proxy
 };
@@ -19,7 +19,7 @@ const R2 = {
     formData.append('tipo', arquivo.type);
     formData.append('tamanho', arquivo.size.toString());
 
-    const response = await fetch('https://faam-upload.jhonnjundev.workers.dev/upload', {
+    const response = await fetch('https://faam-upload.jhonjunn.workers.dev/upload', {
       method: 'POST',
       body: formData,
     });

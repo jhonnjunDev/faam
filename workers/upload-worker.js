@@ -63,7 +63,7 @@ async function handleUpload(request, env, corsHeaders) {
     });
 
     // Gerar URL pública (se bucket for público) ou URL assinada
-    const url = `https://faam-upload.jhonnjundev.workers.dev/file/${key}`;
+    const url = `https://faam-upload.jhonjunn.workers.dev/file/${key}`;
 
     return new Response(JSON.stringify({ url, key, nome, tipo, tamanho }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
