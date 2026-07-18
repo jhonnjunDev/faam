@@ -243,42 +243,39 @@
           </a>
         </div>
       `;
+
+      // Carregar anexos (somente visualização)
+      const containerAnexos = document.getElementById('listaAnexos');
+      if (containerAnexos) {
+        try {
+          const respAnexos = await fetch(`https://faam-upload.jhonjunn.workers.dev/list?paciente_id=${id}`);
+          const arquivosAnexos = await respAnexos.json();
+          if (!arquivosAnexos.length) {
+            containerAnexos.innerHTML = '<p style="color:var(--text-light); font-size:13px;">Nenhum documento anexado.</p>';
+          } else {
+            const icones = { 'application/pdf': 'fa-file-pdf', 'image/jpeg': 'fa-file-image', 'image/png': 'fa-file-image', 'image/webp': 'fa-file-image' };
+            containerAnexos.innerHTML = arquivosAnexos.map(a => `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                  <i class="fas ${icones[a.tipo] || 'fa-file'}" style="font-size:20px; color:var(--accent);"></i>
+                  <div style="min-width:0;">
+                    <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${Utils.escapeHtml(a.nome)}</div>
+                    <div style="font-size:11px; color:var(--text-light);">${R2.formatarTamanho(a.tamanho)} &middot; ${a.criado_em ? new Date(a.criado_em).toLocaleDateString('pt-BR') : '-'}</div>
+                  </div>
+                </div>
+                <a href="https://faam-upload.jhonjunn.workers.dev/file/${a.key}" target="_blank" class="btn btn-sm btn-outline" title="Abrir">
+                  <i class="fas fa-external-link-alt"></i>
+                </a>
+              </div>
+            `).join('');
+          }
+        } catch (err) {
+          containerAnexos.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
+        }
+      }
       }
 
       aguardarPronto();
-
-      // === ANEXOS (somente visualização) ===
-      async function carregarAnexosFicha() {
-        const id = Utils.obterParametroUrl('id');
-        if (!id) return;
-        const container = document.getElementById('listaAnexos');
-        try {
-          const resp = await fetch(`https://faam-upload.jhonjunn.workers.dev/list?paciente_id=${id}`);
-          const arquivos = await resp.json();
-          if (!arquivos.length) {
-            container.innerHTML = '<p style="color:var(--text-light); font-size:13px;">Nenhum documento anexado.</p>';
-            return;
-          }
-          const icones = { 'application/pdf': 'fa-file-pdf', 'image/jpeg': 'fa-file-image', 'image/png': 'fa-file-image', 'image/webp': 'fa-file-image' };
-          container.innerHTML = arquivos.map(a => `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;">
-              <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-                <i class="fas ${icones[a.tipo] || 'fa-file'}" style="font-size:20px; color:var(--accent);"></i>
-                <div style="min-width:0;">
-                  <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${Utils.escapeHtml(a.nome)}</div>
-                  <div style="font-size:11px; color:var(--text-light);">${R2.formatarTamanho(a.tamanho)} &middot; ${a.criado_em ? new Date(a.criado_em).toLocaleDateString('pt-BR') : '-'}</div>
-                </div>
-              </div>
-              <a href="https://faam-upload.jhonjunn.workers.dev/file/${a.key}" target="_blank" class="btn btn-sm btn-outline" title="Abrir">
-                <i class="fas fa-external-link-alt"></i>
-              </a>
-            </div>
-          `).join('');
-        } catch (err) {
-          container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
-        }
-      }
-      carregarAnexosFicha();
 
       // Função para excluir paciente (admin apenas)
       window.excluirPaciente = async function(id, nome) {
