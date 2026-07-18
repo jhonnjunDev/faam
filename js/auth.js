@@ -318,7 +318,7 @@ const Auth = {
       'medico': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'enfermeiro': ['dashboard', 'pacientes', 'paciente_novo', 'paciente_editar', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'tecnico_enfermagem': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
-      'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_detalhe'],
+      'assistente_social': ['dashboard', 'pacientes', 'paciente_ficha', 'relatorios', 'relatorio_novo', 'relatorio_detalhe'],
       'cuidador': ['dashboard', 'relatorios', 'relatorio_novo', 'relatorio_detalhe']
     };
 
