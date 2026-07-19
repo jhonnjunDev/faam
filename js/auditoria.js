@@ -17,9 +17,12 @@ const Auditoria = {
 
     if (DB.modoSupabase) {
       try {
-        await clientSupabase.from('auditoria').insert(registro);
+        const { data, error } = await clientSupabase.from('auditoria').insert(registro);
+        if (error) {
+          console.error('Erro ao registrar auditoria (Supabase):', error.message || error);
+        }
       } catch (e) {
-        console.error('Erro ao registrar auditoria:', e);
+        console.error('Erro ao registrar auditoria (rede):', e);
       }
     } else {
       const chave = 'auditoria_faam';
