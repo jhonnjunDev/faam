@@ -192,11 +192,10 @@
           e.target.value = v;
         });
 
-        // Máscara CNS
+        // Máscara CNS (000 0000 0000 0000)
         document.getElementById('cns').addEventListener('input', (e) => {
-          let v = e.target.value.replace(/\D/g, '').substring(0, 15);
-          v = v.replace(/(\d{3})(?=\d)/g, '$1 ');
-          e.target.value = v;
+          let d = e.target.value.replace(/\D/g, '').substring(0, 15);
+          e.target.value = [d.slice(0,3), d.slice(3,7), d.slice(7,11), d.slice(11,15)].filter(Boolean).join(' ');
         });
 
         // === ANEXOS ===
