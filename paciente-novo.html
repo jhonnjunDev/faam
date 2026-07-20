@@ -54,12 +54,16 @@
                 <input type="text" class="form-control" id="naturalidade" placeholder="Cidade, UF">
               </div>
               <div class="mb-1">
-                <label class="form-label">Telefone</label>
-                <input type="text" class="form-control" id="telefone" maxlength="15" placeholder="(00) 00000-0000">
+                <label class="form-label">Nome do Pai</label>
+                <input type="text" class="form-control" id="nome_pai">
               </div>
               <div class="mb-1">
-                <label class="form-label">E-mail</label>
-                <input type="email" class="form-control" id="email">
+                <label class="form-label">Nome da Mãe</label>
+                <input type="text" class="form-control" id="nome_mae">
+              </div>
+              <div class="mb-1">
+                <label class="form-label">CNS (Cartão Nacional de Saúde)</label>
+                <input type="text" class="form-control" id="cns" maxlength="15" placeholder="000 0000 0000 0000">
               </div>
             </div>
           </div>
@@ -79,6 +83,10 @@
               <div class="mb-1">
                 <label class="form-label">Cidade</label>
                 <input type="text" class="form-control" id="endereco_cidade">
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Município de Residência</label>
+                <input type="text" class="form-control" id="municipio_residencia">
               </div>
               <div class="mb-1">
                 <label class="form-label">CEP</label>
@@ -181,6 +189,23 @@
                 <label class="form-label">Doenças Crônicas</label>
                 <input type="text" class="form-control" id="doencas_cronicas">
               </div>
+              <div class="mb-1">
+                <label class="form-label">Dependência Física</label>
+                <input type="text" class="form-control" id="dependencia_fisica" placeholder="Ex: Cadeirante, Acamado, Hemiplegia...">
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Grau de Dependência</label>
+                <select class="form-select" id="grau_dependencia">
+                  <option value="">Selecione</option>
+                  <option value="I">I - Parcial</option>
+                  <option value="II">II - Moderada</option>
+                  <option value="III">III - Total</option>
+                </select>
+              </div>
+              <div class="mb-1">
+                <label class="form-label">Diagnóstico (descrição livre)</label>
+                <textarea class="form-control" id="diagnostico_livre" rows="4" placeholder="Descreva o diagnóstico detalhado do paciente"></textarea>
+              </div>
             </div>
           </div>
 
@@ -245,23 +270,30 @@
           e.target.value = v;
         });
 
-        // Máscara telefone
-        ['telefone', 'contato_telefone'].forEach(id => {
-          document.getElementById(id).addEventListener('input', (e) => {
-            let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-            if (v.length === 11) {
-              v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (v.length === 10) {
-              v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-            }
-            e.target.value = v;
-          });
+        // Máscara telefone contato
+        document.getElementById('contato_telefone').addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '').substring(0, 11);
+          if (v.length === 11) {
+            v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+          } else if (v.length === 10) {
+            v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+          }
+          e.target.value = v;
         });
 
         // Máscara CEP
         document.getElementById('endereco_cep').addEventListener('input', (e) => {
           let v = e.target.value.replace(/\D/g, '').substring(0, 8);
           v = v.replace(/(\d{5})(\d)/, '$1-$2');
+          e.target.value = v;
+        });
+
+        // Máscara CNS
+        document.getElementById('cns').addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '').substring(0, 15);
+          v = v.replace(/(\d{3})(\d)/, '$1 $2');
+          v = v.replace(/(\d{4})(\d)/, '$1 $2');
+          v = v.replace(/(\d{4})(\d)/, '$1 $2');
           e.target.value = v;
         });
 
@@ -275,11 +307,12 @@
           const dados = {};
           const campos = [
             'nome', 'cpf', 'data_nascimento', 'sexo', 'estado_civil', 'naturalidade',
-            'telefone', 'email', 'endereco_rua', 'endereco_bairro', 'endereco_cidade',
+            'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'municipio_residencia',
             'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
             'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
             'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
             'medicamento_controlado', 'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
+            'nome_pai', 'nome_mae', 'cns', 'dependencia_fisica', 'grau_dependencia', 'diagnostico_livre',
             'responsavel_acompanhamento', 'observacoes'
           ];
 

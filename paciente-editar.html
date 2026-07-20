@@ -80,8 +80,9 @@
                 <div class="mb-1"><label class="form-label">Sexo *</label><select class="form-select" id="sexo" required><option value="M" ${p.sexo==='M'?'selected':''}>Masculino</option><option value="F" ${p.sexo==='F'?'selected':''}>Feminino</option></select></div>
                 <div class="mb-1"><label class="form-label">Estado Civil</label><select class="form-select" id="estado_civil"><option value="">Selecione</option><option value="Solteiro(a)" ${p.estado_civil==='Solteiro(a)'?'selected':''}>Solteiro(a)</option><option value="Casado(a)" ${p.estado_civil==='Casado(a)'?'selected':''}>Casado(a)</option><option value="Viúvo(a)" ${p.estado_civil==='Viúvo(a)'?'selected':''}>Viúvo(a)</option><option value="Divorciado(a)" ${p.estado_civil==='Divorciado(a)'?'selected':''}>Divorciado(a)</option><option value="União Estável" ${p.estado_civil==='União Estável'?'selected':''}>União Estável</option></select></div>
                 <div class="mb-1"><label class="form-label">Naturalidade</label><input type="text" class="form-control" id="naturalidade" value="${Utils.escapeHtml(p.naturalidade || '')}"></div>
-                <div class="mb-1"><label class="form-label">Telefone</label><input type="text" class="form-control" id="telefone" maxlength="15" value="${p.telefone || ''}"></div>
-                <div class="mb-1"><label class="form-label">E-mail</label><input type="email" class="form-control" id="email" value="${p.email || ''}"></div>
+                <div class="mb-1"><label class="form-label">Nome do Pai</label><input type="text" class="form-control" id="nome_pai" value="${Utils.escapeHtml(p.nome_pai || '')}"></div>
+                <div class="mb-1"><label class="form-label">Nome da Mãe</label><input type="text" class="form-control" id="nome_mae" value="${Utils.escapeHtml(p.nome_mae || '')}"></div>
+                <div class="mb-1"><label class="form-label">CNS</label><input type="text" class="form-control" id="cns" maxlength="15" value="${p.cns || ''}"></div>
               </div>
             </div>
 
@@ -91,6 +92,7 @@
                 <div class="mb-1"><label class="form-label">Rua / Avenida</label><input type="text" class="form-control" id="endereco_rua" value="${Utils.escapeHtml(p.endereco_rua || '')}"></div>
                 <div class="mb-1"><label class="form-label">Bairro</label><input type="text" class="form-control" id="endereco_bairro" value="${Utils.escapeHtml(p.endereco_bairro || '')}"></div>
                 <div class="mb-1"><label class="form-label">Cidade</label><input type="text" class="form-control" id="endereco_cidade" value="${Utils.escapeHtml(p.endereco_cidade || '')}"></div>
+                <div class="mb-1"><label class="form-label">Município de Residência</label><input type="text" class="form-control" id="municipio_residencia" value="${Utils.escapeHtml(p.municipio_residencia || '')}"></div>
                 <div class="mb-1"><label class="form-label">CEP</label><input type="text" class="form-control" id="endereco_cep" maxlength="9" value="${p.endereco_cep || ''}"></div>
               </div>
             </div>
@@ -126,6 +128,9 @@
                 <div class="mb-1"><label class="form-label">Histórico de Cirurgias</label><textarea class="form-control" id="historico_cirurgias" rows="2">${Utils.escapeHtml(p.historico_cirurgias || '')}</textarea></div>
                 <div class="mb-1"><label class="form-label">Internações Anteriores</label><textarea class="form-control" id="historico_internacoes" rows="2">${Utils.escapeHtml(p.historico_internacoes || '')}</textarea></div>
                 <div class="mb-1"><label class="form-label">Doenças Crônicas</label><input type="text" class="form-control" id="doencas_cronicas" value="${Utils.escapeHtml(p.doencas_cronicas || '')}"></div>
+                <div class="mb-1"><label class="form-label">Dependência Física</label><input type="text" class="form-control" id="dependencia_fisica" value="${Utils.escapeHtml(p.dependencia_fisica || '')}"></div>
+                <div class="mb-1"><label class="form-label">Grau de Dependência</label><select class="form-select" id="grau_dependencia"><option value="" ${!p.grau_dependencia?'selected':''}>Selecione</option><option value="I" ${p.grau_dependencia==='I'?'selected':''}>I - Parcial</option><option value="II" ${p.grau_dependencia==='II'?'selected':''}>II - Moderada</option><option value="III" ${p.grau_dependencia==='III'?'selected':''}>III - Total</option></select></div>
+                <div class="mb-1"><label class="form-label">Diagnóstico (descrição livre)</label><textarea class="form-control" id="diagnostico_livre" rows="4">${Utils.escapeHtml(p.diagnostico_livre || '')}</textarea></div>
               </div>
             </div>
 
@@ -174,18 +179,25 @@
           e.target.value = v;
         });
 
-        ['telefone', 'contato_telefone'].forEach(id => {
-          document.getElementById(id).addEventListener('input', (e) => {
-            let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-            if (v.length === 11) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            else if (v.length === 10) v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-            e.target.value = v;
-          });
+        document.getElementById('contato_telefone').addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '').substring(0, 11);
+          if (v.length === 11) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+          else if (v.length === 10) v = v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+          e.target.value = v;
         });
 
         document.getElementById('endereco_cep').addEventListener('input', (e) => {
           let v = e.target.value.replace(/\D/g, '').substring(0, 8);
           v = v.replace(/(\d{5})(\d)/, '$1-$2');
+          e.target.value = v;
+        });
+
+        // Máscara CNS
+        document.getElementById('cns').addEventListener('input', (e) => {
+          let v = e.target.value.replace(/\D/g, '').substring(0, 15);
+          v = v.replace(/(\d{3})(\d)/, '$1 $2');
+          v = v.replace(/(\d{4})(\d)/, '$1 $2');
+          v = v.replace(/(\d{4})(\d)/, '$1 $2');
           e.target.value = v;
         });
 
@@ -300,11 +312,12 @@
           const dados = {};
           const campos = [
             'nome', 'cpf', 'data_nascimento', 'sexo', 'estado_civil', 'naturalidade',
-            'telefone', 'email', 'endereco_rua', 'endereco_bairro', 'endereco_cidade',
+            'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'municipio_residencia',
             'endereco_cep', 'contato_nome', 'contato_parentesco', 'contato_telefone',
             'data_entrada', 'quarto', 'tipo_acomodacao', 'responsavel_legal', 'status',
             'diagnostico_principal', 'diagnosticos_secundarios', 'alergias', 'medicamentos',
             'medicamento_controlado', 'historico_cirurgias', 'historico_internacoes', 'doencas_cronicas',
+            'nome_pai', 'nome_mae', 'cns', 'dependencia_fisica', 'grau_dependencia', 'diagnostico_livre',
             'responsavel_acompanhamento', 'observacoes'
           ];
           campos.forEach(c => { dados[c] = document.getElementById(c).value.trim(); });
