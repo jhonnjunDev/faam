@@ -63,7 +63,7 @@
               </div>
               <div class="mb-1">
                 <label class="form-label">CNS (Cartão Nacional de Saúde)</label>
-                <input type="text" class="form-control" id="cns" maxlength="15" placeholder="000 0000 0000 0000">
+                <input type="text" class="form-control" id="cns" maxlength="18" placeholder="000 0000 0000 0000">
               </div>
             </div>
           </div>
@@ -291,9 +291,7 @@
         // Máscara CNS
         document.getElementById('cns').addEventListener('input', (e) => {
           let v = e.target.value.replace(/\D/g, '').substring(0, 15);
-          v = v.replace(/(\d{3})(\d)/, '$1 $2');
-          v = v.replace(/(\d{4})(\d)/, '$1 $2');
-          v = v.replace(/(\d{4})(\d)/, '$1 $2');
+          v = v.replace(/(\d{3})(?=\d)/g, '$1 ');
           e.target.value = v;
         });
 

@@ -82,7 +82,7 @@
                 <div class="mb-1"><label class="form-label">Naturalidade</label><input type="text" class="form-control" id="naturalidade" value="${Utils.escapeHtml(p.naturalidade || '')}"></div>
                 <div class="mb-1"><label class="form-label">Nome do Pai</label><input type="text" class="form-control" id="nome_pai" value="${Utils.escapeHtml(p.nome_pai || '')}"></div>
                 <div class="mb-1"><label class="form-label">Nome da Mãe</label><input type="text" class="form-control" id="nome_mae" value="${Utils.escapeHtml(p.nome_mae || '')}"></div>
-                <div class="mb-1"><label class="form-label">CNS</label><input type="text" class="form-control" id="cns" maxlength="15" value="${p.cns || ''}"></div>
+                <div class="mb-1"><label class="form-label">CNS</label><input type="text" class="form-control" id="cns" maxlength="18" value="${p.cns || ''}"></div>
               </div>
             </div>
 
@@ -195,9 +195,7 @@
         // Máscara CNS
         document.getElementById('cns').addEventListener('input', (e) => {
           let v = e.target.value.replace(/\D/g, '').substring(0, 15);
-          v = v.replace(/(\d{3})(\d)/, '$1 $2');
-          v = v.replace(/(\d{4})(\d)/, '$1 $2');
-          v = v.replace(/(\d{4})(\d)/, '$1 $2');
+          v = v.replace(/(\d{3})(?=\d)/g, '$1 ');
           e.target.value = v;
         });
 
