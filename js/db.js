@@ -196,14 +196,20 @@ const DB = {
     await this.aguardarPronto();
     let pacientes = await this.obterPacientes();
     console.log('[DEBUG-DB] buscarPacientes termo:', JSON.stringify(termo), 'total antes filtro:', pacientes.length, 'modoSupabase:', this.modoSupabase);
+    if (pacientes.length > 0) {
+      console.log('[DEBUG-DB] PRIMEIRO paciente:', JSON.stringify({ nome: pacientes[0].nome, cpf: pacientes[0].cpf, tipoNome: typeof pacientes[0].nome }));
+    }
 
     if (termo) {
       const t = termo.toLowerCase();
-      pacientes = pacientes.filter(p =>
-        (p.nome && p.nome.toLowerCase().includes(t)) ||
-        (p.cpf && p.cpf.replace(/\D/g, '').includes(t.replace(/\D/g, ''))) ||
-        (p.quarto && p.quarto.toLowerCase().includes(t))
-      );
+      const antes = pacientes.length;
+      pacientes = pacientes.filter(p => {
+        const matchNome = p.nome && p.nome.toLowerCase().includes(t);
+        const matchCpf = p.cpf && p.cpf.replace(/\D/g, '').includes(t.replace(/\D/g, ''));
+        const matchQuarto = p.quarto && p.quarto.toLowerCase().includes(t);
+        return matchNome || matchCpf || matchQuarto;
+      });
+      console.log('[DEBUG-DB] filtro:', antes, '->', pacientes.length, 'termo:', JSON.stringify(t));
     }
     console.log('[DEBUG-DB] buscarPacientes total depois filtro:', pacientes.length);
 
