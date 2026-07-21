@@ -374,7 +374,7 @@ body {
   text-decoration: none;
 }
 
-.content-area { padding: 32px; }
+.content-area { padding: 32px; overflow-x: hidden; }
 
 /* ===== CARDS ===== */
 .stat-card {
