@@ -97,7 +97,9 @@
           quarto: document.getElementById('filtroQuarto').value,
           medicamento_controlado: document.getElementById('filtroControlado').value
         };
+        console.log('[DEBUG-BUSCA] termo:', JSON.stringify(termo), 'filtros:', JSON.stringify(filtros), 'modoSupabase:', DB.modoSupabase);
         const pacientes = await DB.buscarPacientes(termo, filtros);
+        console.log('[DEBUG-BUSCA] resultado:', pacientes.length, 'pacientes');
         renderizarTabela(pacientes);
       } catch (e) {
         console.error('Erro ao buscar pacientes:', e);
@@ -180,17 +182,17 @@
     }
 
     function esperar() {
-      if (typeof DB === 'undefined' || typeof Auth === 'undefined') {
-        setTimeout(esperar, 100);
+      if (!window.AuthPronto) {
+        setTimeout(esperar, 50);
         return;
       }
-      if (typeof Auth !== 'undefined' && Auth.estaAutenticado && Auth.estaAutenticado()) {
+      if (Auth.estaAutenticado()) {
         if (!Auth.podeAcessar('pacientes')) { document.getElementById('btnNovo').style.display = 'none'; }
         document.getElementById('busca').addEventListener('keyup', e => { if (e.key === 'Enter') filtrar(); });
         filtrar();
-      } else if (typeof Auth !== 'undefined' && Auth.estaAutenticado && !Auth.estaAutenticado()) {
+      } else {
         window.location.href = 'index.html';
-      } else { setTimeout(esperar, 100); }
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => { esperar(); });

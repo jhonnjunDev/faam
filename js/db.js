@@ -88,7 +88,8 @@ const DB = {
     if (this.modoSupabase) {
       try {
         const { data, error } = await clientSupabase.from('pacientes').select('*');
-        if (error) { console.error(error); return []; }
+        if (error) { console.error('[DEBUG-DB] Supabase error:', error); return []; }
+        console.log('[DEBUG-DB] obterPacientes Supabase retornou:', (data || []).length, 'pacientes');
         return data || [];
       } catch (e) {
         console.error('Erro ao buscar pacientes via Supabase:', e);
@@ -194,6 +195,7 @@ const DB = {
   async buscarPacientes(termo, filtros = {}) {
     await this.aguardarPronto();
     let pacientes = await this.obterPacientes();
+    console.log('[DEBUG-DB] buscarPacientes termo:', JSON.stringify(termo), 'total antes filtro:', pacientes.length, 'modoSupabase:', this.modoSupabase);
 
     if (termo) {
       const t = termo.toLowerCase();
@@ -203,6 +205,7 @@ const DB = {
         (p.quarto && p.quarto.toLowerCase().includes(t))
       );
     }
+    console.log('[DEBUG-DB] buscarPacientes total depois filtro:', pacientes.length);
 
     if (filtros.status) pacientes = pacientes.filter(p => p.status === filtros.status);
     if (filtros.sexo) pacientes = pacientes.filter(p => p.sexo === filtros.sexo);
