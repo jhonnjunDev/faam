@@ -88,9 +88,8 @@ const DB = {
     if (this.modoSupabase) {
       try {
         const { data, error } = await clientSupabase.from('pacientes').select('*');
-        if (error) { console.error('[DEBUG-DB] Supabase error:', error); return []; }
-        console.log('[DEBUG-DB] obterPacientes Supabase retornou:', (data || []).length, 'pacientes');
-        return data || [];
+        if (error) { console.error(error); return []; }
+        return Array.from(data || []);
       } catch (e) {
         console.error('Erro ao buscar pacientes via Supabase:', e);
         return [];
@@ -194,33 +193,37 @@ const DB = {
 
   async buscarPacientes(termo, filtros = {}) {
     await this.aguardarPronto();
-    let pacientes = await this.obterPacientes();
-    console.log('[DEBUG-DB] buscarPacientes termo:', JSON.stringify(termo), 'total antes filtro:', pacientes.length, 'modoSupabase:', this.modoSupabase);
-    if (pacientes.length > 0) {
-      console.log('[DEBUG-DB] PRIMEIRO paciente:', JSON.stringify({ nome: pacientes[0].nome, cpf: pacientes[0].cpf, tipoNome: typeof pacientes[0].nome }));
-    }
+    const dadosBrutos = await this.obterPacientes();
+    // Converter para Array puro (Supabase às vezes retorna objetos que quebram .filter)
+    const pacientes = Array.from(dadosBrutos);
 
+    // Filtro por termo de busca
+    let resultado = [];
     if (termo) {
-      const t = termo.toLowerCase();
-      const antes = pacientes.length;
-      pacientes = pacientes.filter(p => {
-        const matchNome = p.nome && p.nome.toLowerCase().includes(t);
-        const matchCpf = p.cpf && p.cpf.replace(/\D/g, '').includes(t.replace(/\D/g, ''));
-        const matchQuarto = p.quarto && p.quarto.toLowerCase().includes(t);
-        return matchNome || matchCpf || matchQuarto;
-      });
-      console.log('[DEBUG-DB] filtro:', antes, '->', pacientes.length, 'termo:', JSON.stringify(t));
+      const t = termo.toLowerCase().trim();
+      const tNumeros = t.replace(/\D/g, '');
+      for (let i = 0; i < pacientes.length; i++) {
+        const p = pacientes[i];
+        const nome = (p.nome || '').toLowerCase();
+        const cpf = (p.cpf || '').replace(/\D/g, '');
+        const quarto = (p.quarto || '').toLowerCase();
+        if (nome.includes(t) || (tNumeros.length > 0 && cpf.includes(tNumeros)) || quarto.includes(t)) {
+          resultado.push(p);
+        }
+      }
+    } else {
+      resultado = pacientes.slice();
     }
-    console.log('[DEBUG-DB] buscarPacientes total depois filtro:', pacientes.length);
 
-    if (filtros.status) pacientes = pacientes.filter(p => p.status === filtros.status);
-    if (filtros.sexo) pacientes = pacientes.filter(p => p.sexo === filtros.sexo);
-    if (filtros.quarto) pacientes = pacientes.filter(p => p.quarto && p.quarto.toLowerCase().includes(filtros.quarto.toLowerCase()));
-    if (filtros.idadeMin) pacientes = pacientes.filter(p => Utils.calcularIdade(p.data_nascimento) >= parseInt(filtros.idadeMin));
-    if (filtros.idadeMax) pacientes = pacientes.filter(p => Utils.calcularIdade(p.data_nascimento) <= parseInt(filtros.idadeMax));
-    if (filtros.medicamento_controlado) pacientes = pacientes.filter(p => p.medicamento_controlado === filtros.medicamento_controlado);
+    // Filtros adicionais
+    if (filtros.status) resultado = resultado.filter(p => p.status === filtros.status);
+    if (filtros.sexo) resultado = resultado.filter(p => p.sexo === filtros.sexo);
+    if (filtros.quarto) resultado = resultado.filter(p => p.quarto && p.quarto.toLowerCase().includes(filtros.quarto.toLowerCase()));
+    if (filtros.idadeMin) resultado = resultado.filter(p => Utils.calcularIdade(p.data_nascimento) >= parseInt(filtros.idadeMin));
+    if (filtros.idadeMax) resultado = resultado.filter(p => Utils.calcularIdade(p.data_nascimento) <= parseInt(filtros.idadeMax));
+    if (filtros.medicamento_controlado) resultado = resultado.filter(p => p.medicamento_controlado === filtros.medicamento_controlado);
 
-    return pacientes;
+    return resultado;
   },
 
   // ===== RELATÓRIOS =====
@@ -229,7 +232,7 @@ const DB = {
     if (this.modoSupabase) {
       const { data, error } = await clientSupabase.from('relatorios').select('*');
       if (error) { console.error(error); return []; }
-      return data || [];
+      return Array.from(data || []);
     }
     const dados = localStorage.getItem(this.CHAVE_RELATORIOS);
     return dados ? JSON.parse(dados) : [];

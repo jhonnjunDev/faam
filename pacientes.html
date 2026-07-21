@@ -97,9 +97,7 @@
           quarto: document.getElementById('filtroQuarto').value,
           medicamento_controlado: document.getElementById('filtroControlado').value
         };
-        console.log('[DEBUG-BUSCA] termo:', JSON.stringify(termo), 'filtros:', JSON.stringify(filtros), 'modoSupabase:', DB.modoSupabase);
         const pacientes = await DB.buscarPacientes(termo, filtros);
-        console.log('[DEBUG-BUSCA] resultado:', pacientes.length, 'pacientes');
         renderizarTabela(pacientes);
       } catch (e) {
         console.error('Erro ao buscar pacientes:', e);
