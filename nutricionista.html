@@ -267,6 +267,19 @@
         return true;
       },
 
+      async apagarHistoricoPaciente(pacienteId) {
+        const todos = await this.obterDados();
+        const registros = todos.filter(d => d.paciente_id === pacienteId);
+        let apagados = 0;
+
+        for (const registro of registros) {
+          const ok = await this.excluirDados(registro.id);
+          if (ok) apagados++;
+        }
+
+        return apagados;
+      },
+
       async obterDadosPorPaciente(pacienteId, tipo) {
         const todos = await this.obterDados();
         return todos
@@ -371,10 +384,15 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Paciente *</label>
-                <select class="form-select" id="pacienteAvaliacao">
-                  <option value="">Selecione o paciente...</option>
-                  ${ativos.map(p => `<option value="${p.id}">${p.nome} - Quarto ${p.quarto || 'S/Q'}</option>`).join('')}
-                </select>
+                <div style="display:flex; gap:8px; align-items:flex-end;">
+                  <select class="form-select" id="pacienteAvaliacao" onchange="toggleBtnApagarHistorico()">
+                    <option value="">Selecione o paciente...</option>
+                    ${ativos.map(p => `<option value="${p.id}">${p.nome} - Quarto ${p.quarto || 'S/Q'}</option>`).join('')}
+                  </select>
+                  <button class="btn btn-danger btn-sm" id="btnApagarHistorico" style="display:none; white-space:nowrap;" onclick="apagarHistoricoNutricional()">
+                    <i class="fas fa-trash-alt"></i> Apagar Histórico
+                  </button>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">Data da Avaliação *</label>
@@ -457,6 +475,14 @@
           </div>
         </div>
       `;
+    }
+
+    function toggleBtnApagarHistorico() {
+      const pacienteId = document.getElementById('pacienteAvaliacao').value;
+      const btn = document.getElementById('btnApagarHistorico');
+      if (btn) {
+        btn.style.display = pacienteId ? 'inline-flex' : 'none';
+      }
     }
 
     function calcularIMC() {
@@ -1387,6 +1413,48 @@
       } else {
         Utils.mostrarToast('Erro ao excluir registro.', 'error');
       }
+    }
+
+    async function apagarHistoricoNutricional() {
+      const pacienteId = document.getElementById('pacienteAvaliacao').value;
+      if (!pacienteId) {
+        Utils.mostrarToast('Selecione um paciente primeiro.', 'error');
+        return;
+      }
+
+      const paciente = await DB.obterPacientePorId(pacienteId);
+      const nomePaciente = paciente?.nome || 'este paciente';
+
+      const confirmar = Utils.confirmar(
+        `ATENÇÃO: Isso irá apagar TODO o histórico nutricional de "${nomePaciente}".\n\n` +
+        `Isso inclui:\n` +
+        `- Todas as avaliações nutricionais\n` +
+        `- Todos os relatórios nutricionais\n` +
+        `- Todas as prescrições dietéticas\n` +
+        `- Todos os registros de aceitação alimentar\n` +
+        `- Todos os registros de hidratação\n` +
+        `- Todas as intercorrências/alertas\n\n` +
+        `Esta ação NÃO pode ser desfeita.\n\nDeseja continuar?`
+      );
+
+      if (!confirmar) return;
+
+      const btn = document.getElementById('btnApagarHistorico');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Apagando...';
+      }
+
+      const apagados = await Nutricionista.apagarHistoricoPaciente(pacienteId);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Apagar Histórico';
+      }
+
+      Utils.mostrarToast(`${apagados} registro(s) apagado(s) com sucesso!`);
+      renderizarAba(abaAtual);
+      atualizarEstatisticas();
     }
 
     async function verRelatorio(id) {

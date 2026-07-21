@@ -237,6 +237,14 @@
           </div>
         </div>
 
+        <!-- Plano Nutricional -->
+        <div class="info-section">
+          <div class="section-title"><i class="fas fa-apple-alt" style="color:var(--success);"></i> Plano Nutricional</div>
+          <div class="section-body">
+            <div id="conteudoNutricional"><p style="color:var(--text-light); font-size:13px;">Carregando...</p></div>
+          </div>
+        </div>
+
         <!-- Documentos / Anexos (somente visualização) -->
         <div class="info-section">
           <div class="section-title"><i class="fas fa-paperclip"></i> Documentos / Anexos</div>
@@ -281,6 +289,124 @@
           }
         } catch (err) {
           containerAnexos.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar documentos.</p>';
+        }
+      }
+
+      // Carregar dados nutricionais
+      const containerNutricional = document.getElementById('conteudoNutricional');
+      if (containerNutricional) {
+        try {
+          let dadosNutri = [];
+          if (DB.modoSupabase) {
+            const { data, error } = await clientSupabase.from('nutricionista_dados').select('*').eq('paciente_id', id);
+            if (!error && data) dadosNutri = data;
+          } else {
+            const todos = JSON.parse(localStorage.getItem('nutricionista_dados') || '[]');
+            dadosNutri = todos.filter(d => d.paciente_id === id);
+          }
+
+          if (dadosNutri.length === 0) {
+            containerNutricional.innerHTML = '<p style="color:var(--text-light); font-size:14px; padding:8px 0;">Nenhum registro nutricional encontrado para este paciente.</p>';
+          } else {
+            const avaliacoes = dadosNutri.filter(d => d.tipo === 'avaliacao').sort((a, b) => new Date(b.data) - new Date(a.data));
+            const prescricoes = dadosNutri.filter(d => d.tipo === 'prescricao').sort((a, b) => new Date(b.data) - new Date(a.data));
+            const aceitacoes = dadosNutri.filter(d => d.tipo === 'aceitacao').sort((a, b) => new Date(b.data) - new Date(a.data));
+            const hidratacoes = dadosNutri.filter(d => d.tipo === 'hidratacao').sort((a, b) => new Date(b.data) - new Date(a.data));
+            const intercorrencias = dadosNutri.filter(d => d.tipo === 'intercorrencia').sort((a, b) => new Date(b.data) - new Date(a.data));
+
+            let html = '';
+
+            // Última avaliação
+            if (avaliacoes.length > 0) {
+              const ultima = avaliacoes[0];
+              const imc = ultima.imc ? parseFloat(ultima.imc) : null;
+              const classIMC = imc ? (imc < 18.5 ? { texto: 'Abaixo do peso', cor: '#ecc94b' } : imc < 25 ? { texto: 'Peso normal', cor: '#48bb78' } : imc < 30 ? { texto: 'Sobrepeso', cor: '#ed8936' } : { texto: 'Obesidade', cor: '#e53e3e' }) : { texto: '-', cor: '#718096' };
+              const riscoCores = { 'baixo': '#48bb78', 'moderado': '#ecc94b', 'alto': '#ed8936', 'muito_alto': '#e53e3e' };
+              const riscoLabels = { 'baixo': 'Baixo', 'moderado': 'Moderado', 'alto': 'Alto', 'muito_alto': 'Muito Alto' };
+
+              html += `
+                <div style="margin-bottom:16px;">
+                  <h4 style="font-size:13px; color:var(--text-light); margin-bottom:12px;"><i class="fas fa-clipboard-list" style="margin-right:6px;"></i>Última Avaliação (${Utils.formatarData(ultima.data)})</h4>
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">
+                    <div style="text-align:center; padding:12px; background:#f7fafc; border-radius:8px;">
+                      <div style="font-size:20px; font-weight:700; color:var(--primary);">${ultima.peso || '-'} kg</div>
+                      <div style="font-size:11px; color:var(--text-light);">Peso</div>
+                    </div>
+                    <div style="text-align:center; padding:12px; background:#f7fafc; border-radius:8px;">
+                      <div style="font-size:20px; font-weight:700; color:var(--primary);">${ultima.altura || '-'} m</div>
+                      <div style="font-size:11px; color:var(--text-light);">Altura</div>
+                    </div>
+                    <div style="text-align:center; padding:12px; background:${classIMC.cor}15; border-radius:8px;">
+                      <div style="font-size:20px; font-weight:700; color:${classIMC.cor};">${imc || '-'}</div>
+                      <div style="font-size:11px; color:${classIMC.cor};">${classIMC.texto}</div>
+                    </div>
+                    <div style="text-align:center; padding:12px; background:${riscoCores[ultima.risco_nutricional] || '#e2e8f0'}15; border-radius:8px;">
+                      <div style="font-size:14px; font-weight:700; color:${riscoCores[ultima.risco_nutricional] || '#718096'};">${riscoLabels[ultima.risco_nutricional] || 'Não avaliado'}</div>
+                      <div style="font-size:11px; color:var(--text-light);">Risco Nutricional</div>
+                    </div>
+                  </div>
+                </div>`;
+            }
+
+            // Prescrição dietética ativa
+            if (prescricoes.length > 0) {
+              const ultimaPresc = prescricoes[0];
+              const dietaLabels = { 'padrao': 'Padrão', 'diabetes': 'Diabetes', 'hipertensao': 'Hipertensão', 'renal': 'Renal', 'pasta_mole': 'Pasta Mole', 'pastosa': 'Pastosa', 'liquidida': 'Líquida', 'enteral': 'Enteral' };
+              html += `
+                <div style="margin-bottom:16px;">
+                  <h4 style="font-size:13px; color:var(--text-light); margin-bottom:8px;"><i class="fas fa-prescription" style="margin-right:6px;"></i>Plano Alimentar Atual</h4>
+                  <div style="padding:12px; background:#f0fff4; border-radius:8px; border-left:4px solid var(--success);">
+                    <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin-bottom:8px;">
+                      <span><strong>Dieta:</strong> ${dietaLabels[ultimaPresc.tipo_dieta] || ultimaPresc.tipo_dieta}</span>
+                      ${ultimaPresc.calorias ? `<span><strong>Calorias:</strong> ${ultimaPresc.calorias} kcal</span>` : ''}
+                      ${ultimaPresc.proteinas ? `<span><strong>PT:</strong> ${ultimaPresc.proteinas}g</span>` : ''}
+                    </div>
+                    ${ultimaPresc.cardapio ? `<div style="font-size:13px; white-space:pre-wrap; margin-top:8px; padding-top:8px; border-top:1px solid #c6f6d5;">${Utils.escapeHtml(ultimaPresc.cardapio)}</div>` : ''}
+                    ${ultimaPresc.restricoes ? `<div style="font-size:12px; color:#c53030; margin-top:8px;"><strong>Restrições:</strong> ${Utils.escapeHtml(ultimaPresc.restricoes)}</div>` : ''}
+                  </div>
+                </div>`;
+            }
+
+            // Alertas ativos
+            const alertasAtivos = intercorrencias.filter(i => i.status !== 'resolvido');
+            if (alertasAtivos.length > 0) {
+              const gravidadeCores = { 'baixa': '#48bb78', 'media': '#ecc94b', 'alta': '#ed8936', 'critica': '#e53e3e' };
+              html += `
+                <div style="margin-bottom:16px;">
+                  <h4 style="font-size:13px; color:var(--text-light); margin-bottom:8px;"><i class="fas fa-exclamation-triangle" style="color:#e53e3e; margin-right:6px;"></i>Alertas Ativos (${alertasAtivos.length})</h4>
+                  ${alertasAtivos.slice(0, 3).map(a => `
+                    <div style="padding:10px 12px; background:#fff5f5; border-radius:8px; border-left:4px solid ${gravidadeCores[a.gravidade] || '#e53e3e'}; margin-bottom:8px;">
+                      <div style="font-size:12px; font-weight:600; color:${gravidadeCores[a.gravidade] || '#e53e3e'};">${a.tipo_intercorrencia || 'Alerta'} - ${a.gravidade?.toUpperCase() || 'MÉDIA'}</div>
+                      <div style="font-size:13px; margin-top:4px;">${Utils.escapeHtml(Utils.truncar(a.descricao, 100))}</div>
+                      <div style="font-size:11px; color:var(--text-light); margin-top:4px;">${Utils.formatarData(a.data)}</div>
+                    </div>
+                  `).join('')}
+                </div>`;
+            }
+
+            // Resumo rápido de aceitação e hidratação
+            if (aceitacoes.length > 0) {
+              const mediaAceitacao = Math.round(aceitacoes.slice(0, 7).reduce((s, a) => s + (parseInt(a.percentual) || 0), 0) / Math.min(aceitacoes.length, 7));
+              html += `
+                <div style="font-size:13px; color:var(--text-light);">
+                  <i class="fas fa-check-circle" style="margin-right:6px;"></i>
+                  <strong>Aceitação alimentar média (7 dias):</strong> ${mediaAceitacao}%
+                </div>`;
+            }
+            if (hidratacoes.length > 0) {
+              const ultimaHidr = hidratacoes[0];
+              html += `
+                <div style="font-size:13px; color:var(--text-light); margin-top:8px;">
+                  <i class="fas fa-tint" style="margin-right:6px;"></i>
+                  <strong>Última hidratação:</strong> ${ultimaHidr.volume || 0} ml / ${ultimaHidr.meta || 2000} ml (${Utils.formatarData(ultimaHidr.data)})
+                </div>`;
+            }
+
+            containerNutricional.innerHTML = html;
+          }
+        } catch (err) {
+          console.error('Erro ao carregar dados nutricionais:', err);
+          containerNutricional.innerHTML = '<p style="color:var(--danger); font-size:13px;">Erro ao carregar dados nutricionais.</p>';
         }
       }
       }
