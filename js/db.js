@@ -10,7 +10,8 @@ const DB = {
   _sincronizando: false,
 
   async init() {
-    this.modoSupabase = verificarSupabase();
+    // Aguardar Supabase estar pronto (CDN pode demiar para carregar)
+    this.modoSupabase = await aguardarSupabase(3000);
 
     if (this.modoSupabase) {
       console.log('✅ Conectado ao Supabase - dados sincronizados em nuvem');

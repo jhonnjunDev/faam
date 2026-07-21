@@ -40,7 +40,37 @@ function verificarSupabase() {
   }
   // Se o cliente ainda não foi criado, tentar inicializar
   if (!clientSupabase) {
-    inicializarSupabase();
+    // Se o CDN já carregou, criar cliente diretamente
+    if (window.supabase && window.supabase.createClient) {
+      clientSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+    } else {
+      inicializarSupabase();
+    }
   }
   return !!clientSupabase;
+}
+
+// Aguardar Supabase estar pronto (chamado por DB.init)
+function aguardarSupabase(timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    if (verificarSupabase()) {
+      resolve(true);
+      return;
+    }
+    const start = Date.now();
+    const check = () => {
+      if (verificarSupabase()) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - start >= timeoutMs) {
+        resolve(false);
+        return;
+      }
+      setTimeout(check, 100);
+    };
+    setTimeout(check, 100);
+  });
 }
