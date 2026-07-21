@@ -131,6 +131,7 @@ const Utils = {
       'evolucao': 'background:#ebf8ff;color:#2b6cb0',
       'enfermagem': 'background:#f0fff4;color:#276749',
       'prescricao': 'background:#faf5ff;color:#6b46c1',
+      'nutricional': 'background:#f0fff4;color:#276749',
       'laudo': 'background:#fffff0;color:#975a16',
       'alta': 'background:#e6fffa;color:#234e52',
       'obito': 'background:#fff5f5;color:#9b2c2c'
@@ -139,6 +140,7 @@ const Utils = {
       'evolucao': 'Evolução Clínica',
       'enfermagem': 'Enfermagem',
       'prescricao': 'Prescrição Médica',
+      'nutricional': 'Nutricional',
       'laudo': 'Laudos',
       'alta': 'Relatório de Alta',
       'obito': 'Relatório de Óbito'

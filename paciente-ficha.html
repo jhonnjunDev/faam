@@ -239,7 +239,7 @@
 
         <!-- Plano Nutricional -->
         <div class="info-section">
-          <div class="section-title"><i class="fas fa-apple-alt" style="color:var(--success);"></i> Plano Nutricional</div>
+          <div class="section-title"><i class="fas fa-apple-alt" style="color:var(--success);"></i> Acompanhamento Nutricional</div>
           <div class="section-body">
             <div id="conteudoNutricional"><p style="color:var(--text-light); font-size:13px;">Carregando...</p></div>
           </div>
@@ -305,7 +305,12 @@
             dadosNutri = todos.filter(d => d.paciente_id === id);
           }
 
-          if (dadosNutri.length === 0) {
+          // Buscar relatórios nutricionais também
+          let relatoriosNutri = [];
+          const todosRelatorios = await DB.obterRelatorios();
+          relatoriosNutri = todosRelatorios.filter(r => r.paciente_id === id && r.tipo === 'nutricional').sort((a, b) => new Date(b.data) - new Date(a.data));
+
+          if (dadosNutri.length === 0 && relatoriosNutri.length === 0) {
             containerNutricional.innerHTML = '<p style="color:var(--text-light); font-size:14px; padding:8px 0;">Nenhum registro nutricional encontrado para este paciente.</p>';
           } else {
             const avaliacoes = dadosNutri.filter(d => d.tipo === 'avaliacao').sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -399,6 +404,24 @@
                 <div style="font-size:13px; color:var(--text-light); margin-top:8px;">
                   <i class="fas fa-tint" style="margin-right:6px;"></i>
                   <strong>Última hidratação:</strong> ${ultimaHidr.volume || 0} ml / ${ultimaHidr.meta || 2000} ml (${Utils.formatarData(ultimaHidr.data)})
+                </div>`;
+            }
+
+            // Relatórios nutricionais
+            if (relatoriosNutri.length > 0) {
+              html += `
+                <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+                  <h4 style="font-size:13px; color:var(--text-light); margin-bottom:8px;"><i class="fas fa-file-medical" style="margin-right:6px;"></i>Relatórios Nutricionais</h4>
+                  ${relatoriosNutri.slice(0, 5).map(r => `
+                    <div style="padding:10px 12px; background:#f0fff4; border-radius:8px; border-left:4px solid var(--success); margin-bottom:8px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:12px; font-weight:600; color:var(--success);">${r.profissional || 'Nutricionista'}</span>
+                        <span style="font-size:11px; color:var(--text-light);">${Utils.formatarData(r.data)}</span>
+                      </div>
+                      <div style="font-size:13px;">${Utils.escapeHtml(Utils.truncar(r.descricao, 150))}</div>
+                      <a href="relatorio-detalhe.html?id=${r.id}" style="font-size:11px; color:var(--accent); margin-top:4px; display:inline-block;">Ver relatório completo →</a>
+                    </div>
+                  `).join('')}
                 </div>`;
             }
 

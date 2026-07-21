@@ -30,6 +30,7 @@
                   <option value="evolucao">Evolução Clínica</option>
                   <option value="enfermagem">Relatório de Enfermagem</option>
                   <option value="prescricao">Prescrição Médica</option>
+                  <option value="nutricional">Avaliação Nutricional</option>
                   <option value="laudo">Laudos</option>
                   <option value="alta">Relatório de Alta</option>
                   <option value="obito">Relatório de Óbito</option>
@@ -108,7 +109,7 @@
 
       // Nome do profissional logado
       const sessao = Auth.obterSessao();
-      if (sessao && sessao.perfil === 'medico') {
+      if (sessao && (sessao.perfil === 'medico' || sessao.perfil === 'nutricionista')) {
         document.getElementById('profissional').value = sessao.nome;
       }
 
