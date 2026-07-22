@@ -381,6 +381,8 @@
                     ${ultimaPresc.restricoes ? `<div style="font-size:12px; color:#c53030; margin-top:8px;"><strong>Restrições:</strong> ${Utils.escapeHtml(ultimaPresc.restricoes)}</div>` : ''}
                   </div>
                 </div>`;
+            } else {
+              html += `<div style="margin-bottom:16px; padding:12px; background:#f7fafc; border-radius:8px; border-left:4px solid var(--border);"><h4 style="font-size:13px; color:var(--text-light); margin:0;"><i class="fas fa-prescription" style="margin-right:6px;"></i>Plano Alimentar: <span style="color:var(--text-light); font-weight:400;">Nenhum prescrito</span></h4></div>`;
             }
 
             // Alertas ativos
@@ -404,18 +406,21 @@
             if (aceitacoes.length > 0) {
               const mediaAceitacao = Math.round(aceitacoes.slice(0, 7).reduce((s, a) => s + (parseInt(a.percentual) || 0), 0) / Math.min(aceitacoes.length, 7));
               html += `
-                <div style="font-size:13px; color:var(--text-light);">
-                  <i class="fas fa-check-circle" style="margin-right:6px;"></i>
-                  <strong>Aceitação alimentar média (7 dias):</strong> ${mediaAceitacao}%
+                <div style="margin-bottom:8px; padding:10px 12px; background:#f0fff4; border-radius:8px;">
+                  <span style="font-size:13px;"><i class="fas fa-check-circle" style="margin-right:6px; color:var(--success);"></i><strong>Aceitação alimentar média:</strong> ${mediaAceitacao}%</span>
                 </div>`;
+            } else {
+              html += `<div style="margin-bottom:8px; padding:10px 12px; background:#f7fafc; border-radius:8px; border-left:4px solid var(--border);"><span style="font-size:13px; color:var(--text-light);"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Aceitação alimentar: <strong>Nenhum registro</strong></span></div>`;
             }
+
             if (hidratacoes.length > 0) {
               const ultimaHidr = hidratacoes[0];
               html += `
-                <div style="font-size:13px; color:var(--text-light); margin-top:8px;">
-                  <i class="fas fa-tint" style="margin-right:6px;"></i>
-                  <strong>Última hidratação:</strong> ${ultimaHidr.volume || 0} ml / ${ultimaHidr.meta || 2000} ml (${Utils.formatarData(ultimaHidr.data)})
+                <div style="margin-bottom:8px; padding:10px 12px; background:#ebf8ff; border-radius:8px;">
+                  <span style="font-size:13px;"><i class="fas fa-tint" style="margin-right:6px; color:#4299e1;"></i><strong>Última hidratação:</strong> ${ultimaHidr.volume || 0} ml / ${ultimaHidr.meta || 2000} ml</span>
                 </div>`;
+            } else {
+              html += `<div style="margin-bottom:8px; padding:10px 12px; background:#f7fafc; border-radius:8px; border-left:4px solid var(--border);"><span style="font-size:13px; color:var(--text-light);"><i class="fas fa-tint" style="margin-right:6px;"></i>Hidratação: <strong>Nenhum registro</strong></span></div>`;
             }
 
             // Relatórios nutricionais
