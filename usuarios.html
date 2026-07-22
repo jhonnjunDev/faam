@@ -52,21 +52,21 @@
   </div>
 
   <!-- Modal Cadastro de Funcionário -->
-  <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-    <div class="login-card" style="max-width:480px">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h2 style="font-size:20px; color:var(--primary)"><i class="fas fa-user-plus"></i> Cadastrar Funcionário</h2>
-        <button onclick="fecharModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-light)">&times;</button>
+  <div id="modal" class="modal-overlay">
+    <div class="login-card modal-content">
+      <div class="form-header">
+        <h2><i class="fas fa-user-plus"></i> Cadastrar Funcionário</h2>
+        <button class="form-close" onclick="fecharModal()">&times;</button>
       </div>
       <div class="login-error" id="erroModal"></div>
-      <div id="sucessoModal" style="background:#f0fff4; color:#38a169; border-radius:8px; padding:16px; display:none; margin-bottom:16px;">
-        <div style="text-align:center;">
-          <i class="fas fa-check-circle" style="font-size:32px; color:#38a169; margin-bottom:8px;"></i>
-          <h3 style="margin-bottom:8px; color:#38a169;">Funcionário Cadastrado!</h3>
-          <p style="margin-bottom:4px;">E-mail: <strong id="emailCadastrado"></strong></p>
-          <p style="margin-bottom:12px;">Código: <strong id="codigoCadastrado" style="font-size:20px; letter-spacing:4px;"></strong></p>
-          <p style="font-size:12px; color:var(--text-light);">Anote o código e informe ao funcionário.</p>
+      <div id="sucessoModal" class="success-box" style="display:none;">
+        <div class="success-icon">
+          <i class="fas fa-check"></i>
         </div>
+        <h3>Funcionário Cadastrado!</h3>
+        <p>E-mail: <strong id="emailCadastrado"></strong></p>
+        <div class="code-display" id="codigoCadastrado"></div>
+        <p class="hint">Anote o código e informe ao funcionário.</p>
       </div>
       <form id="formUsuario" onsubmit="return false;">
         <div class="mb-2">
@@ -93,32 +93,35 @@
             <option value="nutricionista">Nutricionista</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%" id="btnCadastrar">
-          <i class="fas fa-save"></i> Salvar Funcionário
-        </button>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary" id="btnCadastrar">
+            <i class="fas fa-save"></i> Salvar Funcionário
+          </button>
+        </div>
       </form>
     </div>
   </div>
 
   <!-- Modal Cadastro de Admin -->
-  <div id="modalAdmin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-    <div class="login-card" style="max-width:480px">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h2 style="font-size:20px; color:#6b46c1"><i class="fas fa-user-shield"></i> Cadastrar Administrador</h2>
-        <button onclick="fecharModalAdmin()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-light)">&times;</button>
+  <div id="modalAdmin" class="modal-overlay">
+    <div class="login-card modal-content">
+      <div class="form-header">
+        <h2><i class="fas fa-user-shield"></i> Cadastrar Administrador</h2>
+        <button class="form-close" onclick="fecharModalAdmin()">&times;</button>
       </div>
-      <div style="background:#faf5ff; border:1px solid #e9d8fd; border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px; color:#553c9a;">
-        <i class="fas fa-info-circle"></i> Apenas <strong>Admin Masters</strong> podem criar contas de administrador.
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        Apenas <strong>Admin Masters</strong> podem criar contas de administrador.
       </div>
       <div class="login-error" id="erroModalAdmin"></div>
-      <div id="sucessoModalAdmin" style="background:#f0fff4; color:#38a169; border-radius:8px; padding:16px; display:none; margin-bottom:16px;">
-        <div style="text-align:center;">
-          <i class="fas fa-check-circle" style="font-size:32px; color:#38a169; margin-bottom:8px;"></i>
-          <h3 style="margin-bottom:8px; color:#38a169;">Admin Cadastrado!</h3>
-          <p style="margin-bottom:4px;">E-mail: <strong id="emailAdminCadastrado"></strong></p>
-          <p style="margin-bottom:12px;">Código: <strong id="codigoAdminCadastrado" style="font-size:20px; letter-spacing:4px;"></strong></p>
-          <p style="font-size:12px; color:var(--text-light);">Anote o código e informe ao administrador.</p>
+      <div id="sucessoModalAdmin" class="success-box" style="display:none;">
+        <div class="success-icon">
+          <i class="fas fa-check"></i>
         </div>
+        <h3>Admin Cadastrado!</h3>
+        <p>E-mail: <strong id="emailAdminCadastrado"></strong></p>
+        <div class="code-display" id="codigoAdminCadastrado"></div>
+        <p class="hint">Anote o código e informe ao administrador.</p>
       </div>
       <form id="formAdmin" onsubmit="return false;">
         <div class="mb-2">
@@ -141,9 +144,11 @@
           </select>
           <small style="color:var(--text-light); font-size:12px;">Admin pode gerenciar pacientes, relatórios e usuários</small>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; background:#6b46c1; border-color:#6b46c1;" id="btnCadastrarAdmin">
-          <i class="fas fa-save"></i> Salvar Administrador
-        </button>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg, #6b46c1 0%, #553c9a 100%); box-shadow:0 2px 8px rgba(107,70,193,0.25);" id="btnCadastrarAdmin">
+            <i class="fas fa-save"></i> Salvar Administrador
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -169,15 +174,15 @@
 
       if (!sessao) return;
 
-      const perfilLabels = {
-        admin: '<span class="badge" style="background:#faf5ff;color:#6b46c1;">Administrador</span>',
-        admin_master: '<span class="badge" style="background:#1a202c;color:#fff;">Admin Master</span>',
-        medico: '<span class="badge" style="background:#ebf8ff;color:#2b6cb0;">Médico</span>',
-        enfermeiro: '<span class="badge" style="background:#fff5f5;color:#c53030;">Enfermeiro</span>',
-        tecnico_enfermagem: '<span class="badge" style="background:#fffff0;color:#975a16;">Técnico Enfermagem</span>',
-        assistente_social: '<span class="badge" style="background:#f0fff4;color:#276749;">Assist. Social</span>',
-        cuidador: '<span class="badge" style="background:#fff5f5;color:#d69e2e;">Cuidador</span>',
-        nutricionista: '<span class="badge" style="background:#f0fff4;color:#276749;">Nutricionista</span>'
+      const perfilBadges = {
+        admin: '<span class="badge badge-admin"><i class="fas fa-user-shield"></i> Administrador</span>',
+        admin_master: '<span class="badge badge-admin-master"><i class="fas fa-crown"></i> Admin Master</span>',
+        medico: '<span class="badge badge-medico"><i class="fas fa-user-doctor"></i> Médico</span>',
+        enfermeiro: '<span class="badge badge-enfermeiro"><i class="fas fa-user-nurse"></i> Enfermeiro</span>',
+        tecnico_enfermagem: '<span class="badge badge-tecnico"><i class="fas fa-hand-holding-medical"></i> Técnico Enfermagem</span>',
+        assistente_social: '<span class="badge badge-assistente"><i class="fas fa-handshake"></i> Assist. Social</span>',
+        cuidador: '<span class="badge badge-cuidador"><i class="fas fa-heart"></i> Cuidador</span>',
+        nutricionista: '<span class="badge badge-nutricionista"><i class="fas fa-apple-whole"></i> Nutricionista</span>'
       };
 
       const ehAdminMaster = sessao.perfil === 'admin_master';
@@ -185,38 +190,40 @@
       tbody.innerHTML = usuarios.map(u => {
         const bloqueado = u.status === 'bloqueado';
         const statusBadge = bloqueado
-          ? '<span class="badge" style="background:#fed7d7;color:#c53030;"><i class="fas fa-ban"></i> Bloqueado</span>'
-          : '<span class="badge" style="background:#f0fff4;color:#276749;"><i class="fas fa-check-circle"></i> Ativo</span>';
+          ? '<span class="badge badge-bloqueado"><i class="fas fa-ban"></i> Bloqueado</span>'
+          : '<span class="badge badge-ativo"><i class="fas fa-check-circle"></i> Ativo</span>';
 
         return `
         <tr style="${bloqueado ? 'opacity:0.6;' : ''}">
           <td>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:36px; height:36px; border-radius:50%; background:${bloqueado ? '#a0aec0' : 'var(--primary)'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+            <div class="user-row">
+              <div class="user-avatar-table ${bloqueado ? 'blocked' : 'active'}">
                 ${Utils.obterIniciais(u.nome)}
               </div>
-              <div>
-                <div style="font-weight:600; font-size:14px;">
+              <div class="user-info">
+                <span class="user-name">
                   ${Utils.escapeHtml(u.nome)}
                   ${online[u.id] && !bloqueado ? '<span class="online-dot" title="Online"></span>' : ''}
-                </div>
-                ${u.id === sessao.id ? '<span style="font-size:11px; color:var(--accent);">(Você)</span>' : ''}
+                </span>
+                ${u.id === sessao.id ? '<span class="user-you">(Você)</span>' : ''}
               </div>
             </div>
           </td>
           <td>${Utils.escapeHtml(u.email)}</td>
           <td>${statusBadge}</td>
-          <td>${perfilLabels[u.perfil] || u.perfil}</td>
+          <td>${perfilBadges[u.perfil] || u.perfil}</td>
           <td class="text-right no-print">
             ${u.id !== sessao.id && u.perfil !== 'admin_master' ? `
-              ${ehAdminMaster ? `
-                <button class="btn btn-sm ${bloqueado ? 'btn-success' : 'btn-warning'}" onclick="${bloqueado ? `desbloquearUsuario('${escapeAttr(u.id)}')` : `bloquearUsuario('${escapeAttr(u.id)}', '${escapeAttr(u.nome)}')`}" title="${bloqueado ? 'Desbloquear' : 'Bloquear'}">
-                  <i class="fas ${bloqueado ? 'fa-unlock' : 'fa-lock'}"></i>
+              <div style="display:flex; gap:6px; justify-content:flex-end;">
+                ${ehAdminMaster ? `
+                  <button class="btn-action ${bloqueado ? 'unlock' : 'lock'}" onclick="${bloqueado ? `desbloquearUsuario('${escapeAttr(u.id)}')` : `bloquearUsuario('${escapeAttr(u.id)}', '${escapeAttr(u.nome)}')`}" title="${bloqueado ? 'Desbloquear' : 'Bloquear'}">
+                    <i class="fas ${bloqueado ? 'fa-unlock' : 'fa-lock'}"></i>
+                  </button>
+                ` : ''}
+                <button class="btn-action delete" onclick="excluirUsuario('${escapeAttr(u.id)}', '${escapeAttr(u.nome)}')" title="Excluir">
+                  <i class="fas fa-trash"></i>
                 </button>
-              ` : ''}
-              <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${escapeAttr(u.id)}', '${escapeAttr(u.nome)}')" title="Excluir">
-                <i class="fas fa-trash"></i>
-              </button>
+              </div>
             ` : '<span class="text-muted" style="font-size:12px;">-</span>'}
           </td>
         </tr>
@@ -224,7 +231,7 @@
     }
 
     function abrirModal() {
-      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('modal').classList.add('active');
       document.getElementById('formUsuario').reset();
       document.getElementById('erroModal').style.display = 'none';
       document.getElementById('sucessoModal').style.display = 'none';
@@ -232,7 +239,7 @@
     }
 
     function fecharModal() {
-      document.getElementById('modal').style.display = 'none';
+      document.getElementById('modal').classList.remove('active');
     }
 
     function abrirModalAdmin() {
@@ -241,7 +248,7 @@
         Utils.mostrarToast('Apenas Admin Masters podem criar administradores!', 'error');
         return;
       }
-      document.getElementById('modalAdmin').style.display = 'flex';
+      document.getElementById('modalAdmin').classList.add('active');
       document.getElementById('formAdmin').reset();
       document.getElementById('erroModalAdmin').style.display = 'none';
       document.getElementById('sucessoModalAdmin').style.display = 'none';
@@ -249,7 +256,7 @@
     }
 
     function fecharModalAdmin() {
-      document.getElementById('modalAdmin').style.display = 'none';
+      document.getElementById('modalAdmin').classList.remove('active');
     }
 
     async function excluirUsuario(id, nome) {
