@@ -58,7 +58,10 @@
 
           <!-- Resumo Rápido -->
           <div id="resumoRapido" class="section-card" style="margin-bottom:20px;">
-            <div class="section-header"><i class="fas fa-chart-line"></i> Resumo Nutricional</div>
+            <div class="section-header">
+              <i class="fas fa-chart-line"></i> Resumo Nutricional
+              <button class="btn btn-sm btn-outline" onclick="mostrarDebug()" style="margin-left:auto; font-size:11px;"><i class="fas fa-bug"></i> Debug</button>
+            </div>
             <div class="section-body" id="corpoResumo">
               <p class="text-muted">Carregando...</p>
             </div>
@@ -626,6 +629,34 @@
     // ===== ESTATÍSTICAS =====
     async function atualizarEstatisticas() {
       // Estatísticas globais (pode ser omitido ou mantido simples)
+    }
+
+    function mostrarDebug() {
+      const dadosLocal = JSON.parse(localStorage.getItem('nutricionista_dados') || '[]');
+      const porTipo = {};
+      dadosLocal.forEach(d => {
+        porTipo[d.tipo] = (porTipo[d.tipo] || 0) + 1;
+      });
+
+      let msg = '=== DEBUG DADOS NUTRICIONAIS ===\n\n';
+      msg += `Total no localStorage: ${dadosLocal.length}\n\n`;
+      msg += 'Por tipo:\n';
+      Object.entries(porTipo).forEach(([tipo, qtd]) => {
+        msg += `  ${tipo}: ${qtd}\n`;
+      });
+
+      if (pacienteAtual) {
+        const doPaciente = dadosLocal.filter(d => d.paciente_id === pacienteAtual.id);
+        msg += `\nPara este paciente (${pacienteAtual.nome}): ${doPaciente.length}\n`;
+        doPaciente.forEach(d => {
+          msg += `  - ${d.tipo} (${d.data})\n`;
+        });
+      }
+
+      msg += `\nModo Supabase: ${DB.modoSupabase ? 'SIM' : 'NÃO'}`;
+      msg += `\nTabela existe: ${DB.modoSupabase ? 'Verificando...' : 'N/A'}`;
+
+      alert(msg);
     }
 
     document.addEventListener('DOMContentLoaded', () => { iniciar(); });
