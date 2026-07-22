@@ -100,7 +100,7 @@
               <a href="relatorio-novo.html?paciente=${paciente.id}" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
                 <i class="fas fa-file-medical"></i> Novo Relatório
               </a>
-              <button onclick="window.print()" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
+              <button onclick="imprimirRelatorio()" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3);">
                 <i class="fas fa-print"></i> Imprimir
               </button>
               ${podeExcluir ? `<button onclick="excluirPaciente('${paciente.id}', '${Utils.escapeHtml(paciente.nome)}')" class="btn btn-sm" style="background:rgba(220,38,38,0.8); color:#fff; border:1px solid rgba(220,38,38,0.5);">
@@ -472,6 +472,143 @@
         } else {
           Utils.mostrarToast('Erro ao excluir paciente.', 'error');
         }
+      };
+
+      // Função para imprimir relatório formatado
+      window.imprimirRelatorio = function() {
+        const id = Utils.obterParametroUrl('id');
+        if (!id) return;
+
+        DB.obterPacientePorId(id).then(async (p) => {
+          if (!p) return;
+
+          const idade = Utils.calcularIdade(p.data_nascimento);
+          const sessao = Auth.obterSessao();
+          const nomeProfissional = sessao ? sessao.nome : 'Profissional';
+          const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+          // Buscar dados nutricionais
+          let dadosNutri = [];
+          if (DB.modoSupabase) {
+            const { data } = await clientSupabase.from('nutricionista_dados').select('*').eq('paciente_id', p.id);
+            if (data) dadosNutri = data;
+          }
+          const avaliacoes = dadosNutri.filter(d => d.tipo === 'avaliacao').sort((a, b) => new Date(b.data) - new Date(a.data));
+          const prescricoes = dadosNutri.filter(d => d.tipo === 'prescricao').sort((a, b) => new Date(b.data) - new Date(a.data));
+
+          let nutricionalHtml = '';
+          if (avaliacoes.length > 0) {
+            const a = avaliacoes[0];
+            const imc = a.imc || '-';
+            nutricionalHtml += '<div style="margin-bottom:8px;"><strong>Última Avaliação:</strong> ' + Utils.formatarData(a.data) + '</div>';
+            nutricionalHtml += '<div style="display:flex; gap:16px; margin-bottom:8px;">';
+            nutricionalHtml += '<span><strong>Peso:</strong> ' + (a.peso || '-') + ' kg</span>';
+            nutricionalHtml += '<span><strong>Altura:</strong> ' + (a.altura || '-') + ' m</span>';
+            nutricionalHtml += '<span><strong>IMC:</strong> ' + imc + '</span>';
+            nutricionalHtml += '<span><strong>Risco:</strong> ' + (a.risco_nutricional || '-') + '</span>';
+            nutricionalHtml += '</div>';
+          }
+          if (prescricoes.length > 0) {
+            const dietaLabels = { 'padrao': 'Padrão', 'diabetes': 'Diabetes', 'hipertensao': 'Hipertensão', 'renal': 'Renal', 'pasta_mole': 'Pasta Mole', 'pastosa': 'Pastosa', 'liquidida': 'Líquida', 'enteral': 'Enteral' };
+            const pr = prescricoes[0];
+            nutricionalHtml += '<div><strong>Dieta Atual:</strong> ' + (dietaLabels[pr.tipo_dieta] || pr.tipo_dieta || '-') + (pr.calorias ? ' (' + pr.calorias + ' kcal)' : '') + '</div>';
+          }
+
+          const html = `
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8">
+            <title>Relatório - ${Utils.escapeHtml(p.nome)}</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+            <style>
+              @page { size: A4; margin: 12mm; }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: 'Segoe UI', Arial, sans-serif; color: #2d3748; line-height: 1.4; font-size: 12px; }
+              .header { background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); color: #fff; padding: 16px 24px; margin-bottom: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+              .header h1 { font-size: 18px; }
+              .header .meta { font-size: 11px; opacity: 0.85; text-align: right; }
+              .section { margin-bottom: 14px; }
+              .section-title { font-size: 13px; font-weight: 700; color: #1a365d; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+              .section-title i { color: #3182ce; }
+              .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+              .grid.two { grid-template-columns: repeat(2, 1fr); }
+              .item { background: #f8fafc; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #e2e8f0; }
+              .item.highlight { border-left-color: #3182ce; background: #ebf8ff; }
+              .item.danger { border-left-color: #e53e3e; background: #fff5f5; }
+              .item.full { grid-column: 1 / -1; }
+              .item label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #718096; margin-bottom: 2px; font-weight: 600; }
+              .item .val { font-size: 12px; font-weight: 600; }
+              .item .val.red { color: #c53030; }
+              .pre { white-space: pre-wrap; font-size: 11px; line-height: 1.4; }
+              .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #718096; }
+              .footer .sig { text-align: center; padding-top: 30px; border-top: 1px solid #2d3748; min-width: 160px; }
+              @media print { body { font-size: 11px; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .item { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div><h1>Relatório do Paciente</h1><div style="font-size:12px; opacity:0.85;">FAAM - Sistema de Gestão Médica</div></div>
+              <div class="meta"><div>Data: ${dataAtual}</div><div>Documento Confidencial</div></div>
+            </div>
+
+            <div class="section">
+              <div class="section-title"><i class="fas fa-user"></i> Dados Pessoais</div>
+              <div class="grid">
+                <div class="item highlight"><label>Nome Completo</label><div class="val">${Utils.escapeHtml(p.nome)}</div></div>
+                <div class="item"><label>CNS</label><div class="val">${p.cns || '-'}</div></div>
+                <div class="item"><label>Data de Nascimento</label><div class="val">${Utils.formatarData(p.data_nascimento)} (${idade} anos)</div></div>
+                <div class="item"><label>Sexo</label><div class="val">${p.sexo === 'M' ? 'Masculino' : 'Feminino'}</div></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title"><i class="fas fa-heartbeat" style="color:#e53e3e;"></i> Condição de Saúde</div>
+              <div class="grid two">
+                <div class="item danger"><label>Diagnóstico Principal</label><div class="val">${Utils.escapeHtml(p.diagnostico_principal) || '-'}</div></div>
+                <div class="item"><label>Diagnósticos Secundários</label><div class="val">${Utils.escapeHtml(p.diagnosticos_secundarios) || '-'}</div></div>
+              </div>
+              <div class="grid" style="margin-top:6px;">
+                <div class="item"><label>Alergias</label><div class="val red">${Utils.escapeHtml(p.alergias) || 'Nenhuma conhecida'}</div></div>
+                <div class="item"><label>Doenças Crônicas</label><div class="val">${Utils.escapeHtml(p.doencas_cronicas) || '-'}</div></div>
+                <div class="item"><label>Dependência Física</label><div class="val">${Utils.escapeHtml(p.dependencia_fisica) || '-'}</div></div>
+              </div>
+              ${p.diagnostico_livre ? '<div class="grid" style="margin-top:6px;"><div class="item full"><label>Diagnóstico (descrição)</label><div class="val pre">' + Utils.escapeHtml(p.diagnostico_livre) + '</div></div></div>' : ''}
+            </div>
+
+            <div class="section">
+              <div class="section-title"><i class="fas fa-pills" style="color:#38a169;"></i> Medicamentos em Uso</div>
+              <div class="grid">
+                <div class="item full"><label>Lista de Medicamentos</label><div class="val pre">${Utils.escapeHtml(p.medicamentos) || '-'}</div></div>
+                ${p.medicamento_controlado === 'sim' ? '<div class="item"><label>Controlado</label><div class="val" style="color:#d69e2e;"><i class="fas fa-pills"></i> Sim</div></div>' : ''}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title"><i class="fas fa-history" style="color:#d69e2e;"></i> Histórico Médico</div>
+              <div class="grid two">
+                <div class="item"><label>Histórico de Cirurgias</label><div class="val">${Utils.escapeHtml(p.historico_cirurgias) || '-'}</div></div>
+                <div class="item"><label>Internações Anteriores</label><div class="val">${Utils.escapeHtml(p.historico_internacoes) || '-'}</div></div>
+              </div>
+            </div>
+
+            ${nutricionalHtml ? '<div class="section"><div class="section-title"><i class="fas fa-apple-alt" style="color:#38a169;"></i> Acompanhamento Nutricional</div><div style="background:#f0fff4; padding:8px 12px; border-radius:6px; border-left:3px solid #38a169;">' + nutricionalHtml + '</div></div>' : ''}
+
+            ${p.observacoes ? '<div class="section"><div class="section-title"><i class="fas fa-stethoscope"></i> Observações</div><div style="background:#f8fafc; padding:8px 12px; border-radius:6px;"><div class="pre">' + Utils.escapeHtml(p.observacoes) + '</div></div></div>' : ''}
+
+            <div class="footer">
+              <div><div>FAAM - Sistema de Gestão Médica</div><div>Documento gerado em ${dataAtual}</div></div>
+              <div class="sig"><div style="font-weight:600; color:#2d3748;">${Utils.escapeHtml(nomeProfissional)}</div></div>
+            </div>
+
+            <script>window.onload = function() { window.print(); }<\/script>
+          </body>
+          </html>`;
+
+          const win = window.open('', '_blank');
+          win.document.write(html);
+          win.document.close();
+        });
       };
     });
   </script>
