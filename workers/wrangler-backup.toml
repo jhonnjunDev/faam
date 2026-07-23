@@ -1,0 +1,14 @@
+name = "faam-backup"
+main = "backup-worker.js"
+compatibility_date = "2024-01-01"
+
+[[r2_buckets]]
+binding = "DOCUMENTOS"
+bucket_name = "faam-documentos"
+
+[vars]
+SUPABASE_URL = "https://htfhfutjhlqktbzjbiuc.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0ZmhmdXRqaGxxa3RiempiaXVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4ODQzNDQsImV4cCI6MjA5OTQ2MDM0NH0.j9fyx9LyndY2ltnyPAdVoByNa8JIynCwtOVp5A-BycI"
+
+[triggers]
+crons = ["0 3 1 * *"]

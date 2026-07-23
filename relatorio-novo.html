@@ -7,6 +7,12 @@
   <title>Novo Relatório - FAAM</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .form-select {
+      width: 100%;
+      min-height: 48px;
+    }
+  </style>
 </head>
 <body data-pagina="relatorio-novo" data-titulo="Novo Relatório" data-breadcrumb='<a href="dashboard.html">Dashboard</a> / <a href="relatorios.html">Relatórios</a> / Novo'>
 
@@ -16,14 +22,14 @@
         <form id="formRelatorio" onsubmit="return false;">
           <div class="form-card mb-3">
             <h3><i class="fas fa-file-medical"></i> Dados do Relatório</h3>
-            <div class="info-grid" style="gap: 20px;">
-              <div style="margin-bottom: 16px;">
+            <div class="form-grid">
+              <div class="form-group">
                 <label class="form-label">Paciente *</label>
                 <select class="form-select" id="paciente_id" required>
                   <option value="">Selecione o paciente</option>
                 </select>
               </div>
-              <div style="margin-bottom: 16px;">
+              <div class="form-group">
                 <label class="form-label">Tipo de Relatório *</label>
                 <select class="form-select" id="tipo" required>
                   <option value="">Selecione o tipo</option>
@@ -36,11 +42,11 @@
                   <option value="obito">Relatório de Óbito</option>
                 </select>
               </div>
-              <div style="margin-bottom: 16px;">
+              <div class="form-group">
                 <label class="form-label">Data *</label>
                 <input type="date" class="form-control" id="data" required>
               </div>
-              <div style="margin-bottom: 16px;">
+              <div class="form-group">
                 <label class="form-label">Profissional Responsável *</label>
                 <input type="text" class="form-control" id="profissional" required placeholder="Ex: Dr. Carlos Mendes">
               </div>
